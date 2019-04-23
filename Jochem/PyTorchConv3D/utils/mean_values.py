@@ -3,7 +3,7 @@
 def get_mean(norm_value=255, dataset='activitynet'):
 
     # Below values are in RGB order
-    assert dataset in ['activitynet', 'kinetics', 'ucf101']
+    assert dataset in ['activitynet', 'kinetics', 'ucf101', 'abide']
 
     if dataset == 'activitynet':
         return [114.7748/norm_value, 107.7354/norm_value, 99.4750/norm_value]

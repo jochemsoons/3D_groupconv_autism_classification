@@ -106,8 +106,15 @@ class AbideDataset(Dataset):
 
 
 # You can run/test this file using the below adapt the root path though!
-x = AbideDataset("/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis")
-# print(x_item)
-print(len(x))
+abide = AbideDataset("/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis")
+
+# for i in range(3):
+#     x, y = abide[i]
+#     # print(x.shape)
+#     for x_ in x:
+#         for x__ in x_:
+#             for x___ in x__:
+#                 print(int((x___[0])))
+# # print(len(x))
 # print(x[2])
-print(x._root_path)
+# print(x._root_path)
