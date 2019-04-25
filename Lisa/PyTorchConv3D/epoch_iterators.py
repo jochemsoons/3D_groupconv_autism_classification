@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018 Tom Runia
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -48,7 +48,7 @@ def train_epoch(config, model, criterion, optimizer, device,
         clips = clips.to(device)
         targets = targets.to(device)
         if config.model == 'i3d':
-            targets = torch.unsqueeze(targets, -1)
+            targets = torch.unsqueeze(targets, 0)
 
         # Feed-forward through the network
         logits = model.forward(clips)

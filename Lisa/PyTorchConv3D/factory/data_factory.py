@@ -132,7 +132,8 @@ def get_validation_set(config, spatial_transform, temporal_transform, target_tra
 
         validation_data = AbideDataset(
         root_path=config.video_path,
-        subset='validation'
+        subset='val',
+        summarie=config.data_to_train
         )
 
     return validation_data
