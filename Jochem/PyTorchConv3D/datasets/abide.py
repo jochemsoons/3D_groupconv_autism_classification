@@ -45,18 +45,16 @@ class AbideDataset(Dataset):
     # Get's the standard data of the abide dataset.
     def _make_dataset(self):
 
-        self._data_files = glob.glob(os.path.join(self._root_path, '*.hdf5'))
-        self._data_files.sort()
+        self._data_files = glob.glob(os.path.join(self._root_path, '{}.hdf5'.format(self._subset)))
 
         # Get the number of samples
         with h5py.File(self._data_files[0]) as hf:
-            self._num_examples_per_file = len(hf['summaries'][self._data_to_train])
+            self._num_examples_per_file = len(hf[self._data_to_train])
             self._num_examples = len(self._data_files)*self._num_examples_per_file
 
 
-        # We have two classes
+        # We have two classe
         self._classes = set([0,1])
-        self._target_offset = min(self._classes)
 
         print('  Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
         print('  Number of {} examples found:   {}'.format(self._subset, len(self)))
@@ -67,26 +65,14 @@ class AbideDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        container_idx = idx // self._num_examples_per_file
-        example_idx = (idx-(container_idx*self._num_examples_per_file))
-        print(example_idx)
-
         # Get the asked example from the datafile from the wanted dataset
-        with h5py.File(self._data_files[container_idx], 'r') as hf:
-            pic = hf['summaries'][self._data_to_train][example_idx]
-            target = 0 # hf.attrs['DX_GROUP'][example_idx]
+        with h5py.File(self._data_files[0], 'r') as hf:
+            img = hf[self._data_to_train][idx]
+            target = hf['labels'][idx]
 
-        # Apply spatial transformations (i.e. spatial cropping, flipping, normalization)
-        if self._spatial_transform is not None:
-            self._spatial_transform.randomize_parameters()
-            pic = [self._spatial_transform(frame) for frame in clip]
-
-        # Convert both numpy arrays to tensors
-        pic = torch.from_numpy(pic)
-        """ Maybe ask devanshu if below code is needed i don't know... """
-        #pic   = torch.stack(pic, dim=1).type(torch.FloatTensor)
-        target = torch.from_numpy(np.asarray(target-self.target_offset, np.int64))
-        return pic, target
+        img = torch.from_numpy(img)
+        target = torch.from_numpy(np.asarray(target))
+        return img, target
 
     @property
     def classes(self):
@@ -106,15 +92,4 @@ class AbideDataset(Dataset):
 
 
 # You can run/test this file using the below adapt the root path though!
-abide = AbideDataset("/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis")
-
-# for i in range(3):
-#     x, y = abide[i]
-#     # print(x.shape)
-#     for x_ in x:
-#         for x__ in x_:
-#             for x___ in x__:
-#                 print(int((x___[0])))
-# # print(len(x))
-# print(x[2])
-# print(x._root_path)
+abide = AbideDataset("/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis", subset='val')

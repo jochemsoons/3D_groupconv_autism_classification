@@ -66,11 +66,7 @@ def get_training_set(config, spatial_transform, temporal_transform, target_trans
 
         training_data = AbideDataset(
             root_path=config.video_path,
-            subset='train',
-            data_to_train='T1',
-            spatial_transform=None,
-            temporal_transform=None,
-            target_transform=None)
+            subset='train')
 
     return training_data
 
@@ -137,11 +133,7 @@ def get_validation_set(config, spatial_transform, temporal_transform, target_tra
 
         validation_data = AbideDataset(
             root_path=config.video_path,
-            subset='validation',
-            data_to_train='T1',
-            spatial_transform=None,
-            temporal_transform=None,
-            target_transform=None)
+            subset='validation')
 
     return validation_data
 
@@ -195,6 +187,13 @@ def get_test_set(config, spatial_transform, temporal_transform, target_transform
             temporal_transform,
             target_transform,
             sample_duration=config.sample_duration)
+
+
+    elif config.dataset == 'abide':
+
+        validation_data = AbideDataset(
+            root_path=config.video_path,
+            subset='test')
 
     return test_data
 

@@ -1,35 +1,42 @@
 import h5py
 import numpy as np
+import random
+
 
 f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/fmri_summary_abideI_II.hdf5',
 'r')
 
 train_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/train.hdf5', 'w')
 
-val_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/val.hdf5',
+val_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/validation.hdf5',
 'w')
 
 test_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5',
 'w')
 
-def write_subset_files(file, summary, train_ratio, val_ratio):
+def write_subset_files(file, summary, test_ratio, train_val_ratio):
     summaries = file['summaries']
     attrs = summaries.attrs
     labels = attrs['DX_GROUP']
-
     dataset = summaries[summary]
 
-    train_index = round(train_ratio * len(dataset))
-    val_index = train_index + round(val_ratio * len(dataset))
+    joined_set = list(zip(dataset, labels))
+    random.shuffle(joined_set)
 
-    train_data = dataset[0:train_index]
-    train_labels = labels[0:train_index]
+    dataset, labels = zip(*joined_set)
 
-    val_data = dataset[train_index:val_index]
-    val_labels = labels[train_index:val_index]
+    test_index = round(test_ratio * len(dataset))
+    train_index = test_index + round(train_val_ratio * (len(dataset) -
+    test_index))
 
-    test_data = dataset[val_index:]
-    test_labels = dataset[val_index:]
+    test_data = dataset[0:test_index]
+    test_labels = labels[0:test_index]
+
+    train_data = dataset[test_index:train_index]
+    train_labels = labels[test_index:train_index]
+
+    val_data = dataset[train_index:]
+    val_labels = dataset[train_index:]
 
     train_f.create_dataset(summary, data=train_data)
     train_f.create_dataset('labels', data=train_labels)
@@ -40,4 +47,4 @@ def write_subset_files(file, summary, train_ratio, val_ratio):
 
     train_f.close(), val_f.close(), test_f.close()
 
-write_subset_files(f, 'T1', 0.6, 0.3)
+write_subset_files(f, 'T1', 0.3, 0.8)
