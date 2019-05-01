@@ -64,7 +64,7 @@ class Unit3D(nn.Module):
         self._use_bias = use_bias
         self.name = name
         self.padding = padding
-
+        print(in_channels)
         self.conv3d = nn.Conv3d(
             in_channels=in_channels,
             out_channels=self._output_channels,
@@ -216,8 +216,8 @@ class InceptionI3D(nn.Module):
         'logits',
     )
 
-    def __init__(self, num_classes=400, spatial_squeeze=True, final_endpoint='logits',
-                 name='inception_i3d', in_channels=45, dropout_keep_prob=1.0):
+    def __init__(self, num_classes=2, spatial_squeeze=True, final_endpoint='logits',
+                 name='inception_i3d', in_channels=1, dropout_keep_prob=1.0):
 
         """Initializes I3D model instance.
         Args:
@@ -252,7 +252,7 @@ class InceptionI3D(nn.Module):
 
         self.layers = {}
         end_point = 'Conv3d_1a_7x7'
-        self.layers[end_point] = Unit3D(in_channels, 64, kernel_size=[7, 7, 7], stride=(2, 2, 2), padding=3, name=name+end_point)
+        self.layers[end_point] = Unit3D(1, 64, kernel_size=[3, 3, 3], stride=(1, 1, 1), padding=3, name=name+end_point)
 
         end_point = 'MaxPool3d_2a_3x3'
         self.layers[end_point] = MaxPool3dSamePadding(kernel_size=[1, 3, 3], stride=(1, 2, 2), padding=0)
@@ -300,7 +300,7 @@ class InceptionI3D(nn.Module):
         self.layers[end_point] = InceptionModule(256 + 320 + 128 + 128, [384, 192, 384, 48, 128, 128], name+end_point)
 
         end_point = 'AvgPool_5'
-        self.layers[end_point] = nn.AvgPool3d(kernel_size=[8, 7, 7], stride=(1, 1, 1))
+        self.layers[end_point] = nn.AvgPool3d(kernel_size=[2, 1, 1], stride=(1, 1, 1))
 
         end_point = 'Dropout_5'
         self.layers[end_point] = nn.Dropout(self._dropout_rate, inplace=True)
@@ -330,8 +330,9 @@ class InceptionI3D(nn.Module):
 
     def forward(self, x):
         for layer_name, layer in self.layers.items():
-            print(layer(x))
+            print("enter layer {}".format(layer_name))
             x = layer(x)
+            print("past layer {}".format(layer_name))
         if self._spatial_squeeze:
             x = x.squeeze(3).squeeze(3)
         return x  # logits

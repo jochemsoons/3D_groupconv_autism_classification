@@ -70,11 +70,7 @@ print(h_pool2.get_shape) # (?, 64, 64, 10, 64)    # -> output image: 7x7 x64
 W_fc1 = weight_variable([2304, 1024])  # [7*7*64, 1024]
 b_fc1 = bias_variable([1024]) # [1024]]
 #
-# # Dense Layer
-#   pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
-#   dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
-#   dropout = tf.layers.dropout(
-#       inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+
 
 h_pool2_flat = tf.reshape(h_pool2, [-1, 2304])  # -> output image: [-1, 7*7*64] = 3136
 print(h_pool2_flat.get_shape)  # (?, 2621440)
@@ -104,15 +100,15 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 sess.run(tf.global_variables_initializer())
 
 # Include keep_prob in feed_dict to control dropout rate.
-for i in range(20):
+for i in range(100):
     batch = get_data_MRI(sess,'train',batch_size, 'T1')
 
     #Logging every 100th iteration in the training process.
     if i%5 == 0:
         train_accuracy = accuracy.eval(session=sess, feed_dict={x:batch[0], y_: batch[1], keep_prob: 1.0})
         print("step %d, training accuracy %g"%(i, train_accuracy))
-    train_step.run(session=sess, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+    train_step.run(session=sess, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.4})
 
 # Evaulate our accuracy on the test data
-testset = get_data_MRI(sess,'test',30, 'T1')
+testset = get_data_MRI(sess,'test',batch_size, 'T1')
 print("test accuracy %g"%accuracy.eval(session=sess, feed_dict={x: testset[0], y_: testset[1], keep_prob: 1.0}))

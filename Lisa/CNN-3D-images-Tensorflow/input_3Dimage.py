@@ -20,7 +20,7 @@ filenames = {}
 
 # user selection
 # data_dir = '/home/lsalomons'
-data_dir = '/home/lisasalomons/Desktop/afstudeerproject_KI/Lisa'
+data_dir = '/home/lisasalomons/Desktop'
 num_class = 2
 
 def get_filenames(data_set):
@@ -44,7 +44,6 @@ def get_filenames(data_set):
 
 def get_data_MRI(sess, data_set, batch_size, summary):
     global batch_index, filenames
-
     # See if the data_set was already looked up or not
     try:
         filenames[data_set]
