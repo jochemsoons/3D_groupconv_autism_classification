@@ -25,7 +25,7 @@ class AbideDataset(Dataset):
         Standard is the T1 input, aka the first input. Later we should make it
         possible to loop over more parts of the summaries list.
     """
-    def __init__(self, root_path, subset='train',data_to_train='T1', spatial_transform=None,
+    def __init__(self, root_path, subset, summary, spatial_transform=None,
                  temporal_transform=None, target_transform=None):
 
         assert temporal_transform is None, 'Temporal transform not supported for AbideDataset'
@@ -34,7 +34,7 @@ class AbideDataset(Dataset):
 
         self._root_path = root_path
         self._subset = subset
-        self._data_to_train = data_to_train
+        self._data_to_train = summary
 
         self._spatial_transform = spatial_transform
         self._temporal_transform = temporal_transform
@@ -53,7 +53,7 @@ class AbideDataset(Dataset):
             self._num_examples = len(self._data_files)*self._num_examples_per_file
 
 
-        # We have two classe
+        # We have two classes
         self._classes = set([0,1])
 
         print('  Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
@@ -65,14 +65,18 @@ class AbideDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        # Get the asked example from the datafile from the wanted dataset
-        with h5py.File(self._data_files[0], 'r') as hf:
-            img = hf[self._data_to_train][idx]
-            target = hf['labels'][idx]
+        container_idx = idx // self._num_examples_per_file
+        example_idx = (idx-(container_idx*self._num_examples_per_file))
 
-        img = torch.from_numpy(img)
-        target = torch.from_numpy(np.asarray(target))
-        return img, target
+        # Get the asked example from the datafile from the wanted dataset
+        with h5py.File(self._data_files[container_idx], 'r') as hf:
+            pic = hf[self._data_to_train][example_idx]
+            target =  hf['labels'][example_idx]
+
+        # Convert both numpy arrays to tensors
+        pic = torch.from_numpy(pic)
+        target = torch.from_numpy(np.asarray(target, np.int64))
+        return pic, target
 
     @property
     def classes(self):
@@ -92,4 +96,4 @@ class AbideDataset(Dataset):
 
 
 # You can run/test this file using the below adapt the root path though!
-abide = AbideDataset("/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis", subset='val')
+#x = AbideDataset("/home/lisasalomons/Desktop/afstudeerproject_KI/Lisa")

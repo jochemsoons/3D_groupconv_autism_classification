@@ -1,7 +1,7 @@
 # MIT License
-# 
+#
 # Copyright (c) 2018 Tom Runia
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -18,6 +18,7 @@ from __future__ import print_function
 
 from datetime import datetime
 from utils.utils import *
+import ipdb
 
 import torch
 
@@ -48,7 +49,9 @@ def train_epoch(config, model, criterion, optimizer, device,
         clips = clips.to(device)
         targets = targets.to(device)
         if config.model == 'i3d':
-            targets = torch.unsqueeze(targets, -1)
+            targets = torch.unsqueeze(targets, 0)
+            clips = torch.squeeze(clips, -1)
+            clips = torch.unsqueeze(clips, 1)
 
         # Feed-forward through the network
         logits = model.forward(clips)
@@ -63,6 +66,8 @@ def train_epoch(config, model, criterion, optimizer, device,
                     raise RuntimeError('Number of output logits ({}) does not match number of classes ({})'.format(logits.shape[1], config.finetune_num_classes))
 
         _, preds = torch.max(logits, 1)
+        ipdb.set_trace()
+        print(logits)
         loss = criterion(logits, targets)
 
         # Calculate accuracy

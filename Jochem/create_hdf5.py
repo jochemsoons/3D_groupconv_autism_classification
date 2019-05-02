@@ -19,12 +19,12 @@ def write_subset_files(file, summary, test_ratio, train_val_ratio):
     attrs = summaries.attrs
     labels = attrs['DX_GROUP']
     dataset = summaries[summary]
-
+    # dataset = dataset[:,20:23:,:,]
+    # print(dataset.shape)
     joined_set = list(zip(dataset, labels))
     random.shuffle(joined_set)
 
     dataset, labels = zip(*joined_set)
-
     test_index = round(test_ratio * len(dataset))
     train_index = test_index + round(train_val_ratio * (len(dataset) -
     test_index))
@@ -33,10 +33,12 @@ def write_subset_files(file, summary, test_ratio, train_val_ratio):
     test_labels = labels[0:test_index]
 
     train_data = dataset[test_index:train_index]
+    print(train_data[0].shape)
+
     train_labels = labels[test_index:train_index]
 
     val_data = dataset[train_index:]
-    val_labels = dataset[train_index:]
+    val_labels = labels[train_index:]
 
     train_f.create_dataset(summary, data=train_data)
     train_f.create_dataset('labels', data=train_labels)

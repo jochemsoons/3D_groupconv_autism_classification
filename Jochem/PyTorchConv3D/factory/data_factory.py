@@ -19,8 +19,7 @@ from datasets.abide import AbideDataset
 
 def get_training_set(config, spatial_transform, temporal_transform, target_transform):
 
-    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender',
-    'abide']
+    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender', 'abide']
 
     if config.dataset == 'kinetics':
 
@@ -63,10 +62,11 @@ def get_training_set(config, spatial_transform, temporal_transform, target_trans
             target_transform=target_transform)
 
     elif config.dataset == 'abide':
-
         training_data = AbideDataset(
-            root_path=config.video_path,
-            subset='train')
+        root_path=config.video_path,
+        subset='train',
+        summary=config.data_to_train
+        )
 
     return training_data
 
@@ -76,8 +76,7 @@ def get_training_set(config, spatial_transform, temporal_transform, target_trans
 
 def get_validation_set(config, spatial_transform, temporal_transform, target_transform):
 
-    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender',
-    'abide']
+    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender', 'abide']
 
     # Disable evaluation
     if config.no_eval:
@@ -132,8 +131,10 @@ def get_validation_set(config, spatial_transform, temporal_transform, target_tra
     elif config.dataset == 'abide':
 
         validation_data = AbideDataset(
-            root_path=config.video_path,
-            subset='validation')
+        root_path=config.video_path,
+        subset='validation',
+        summary=config.data_to_train
+        )
 
     return validation_data
 
@@ -142,8 +143,7 @@ def get_validation_set(config, spatial_transform, temporal_transform, target_tra
 
 def get_test_set(config, spatial_transform, temporal_transform, target_transform):
 
-    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender',
-    'abide']
+    assert config.dataset in ['kinetics', 'activitynet', 'ucf101', 'blender', 'abide']
     assert config.test_subset in ['val', 'test']
 
     if config.test_subset == 'val':
@@ -187,13 +187,6 @@ def get_test_set(config, spatial_transform, temporal_transform, target_transform
             temporal_transform,
             target_transform,
             sample_duration=config.sample_duration)
-
-
-    elif config.dataset == 'abide':
-
-        validation_data = AbideDataset(
-            root_path=config.video_path,
-            subset='test')
 
     return test_data
 

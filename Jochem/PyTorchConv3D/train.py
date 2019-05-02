@@ -65,10 +65,9 @@ device = torch.device(config.device)
 # Returns the network instance (I3D, 3D-ResNet etc.)
 # Note: this also restores the weights and optionally replaces final layer
 model, parameters = model_factory.get_model(config)
-
 print('#'*60)
 if config.model == 'i3d':
-    param_names = [p['name'] for p in parameters]
+    param_names = [p[0] for p in model.named_parameters()]
     print('Parameters to train:')
     print(param_names)
     print('#'*60)

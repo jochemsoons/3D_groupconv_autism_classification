@@ -71,4 +71,7 @@ def parse_opts():
     parser.add_argument('--num_workers', default=6, type=int, help='Number of threads for multi-thread loading')
     parser.add_argument('--no_eval', action='store_true', default=False, help='Disable evaluation')
 
+    #abide
+    parser.add_argument('--data_to_train', default='T1', help='Data from the abide dataset to train on')
+
     return parser.parse_args()
