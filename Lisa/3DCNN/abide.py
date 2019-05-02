@@ -25,20 +25,13 @@ class AbideDataset(Dataset):
         Standard is the T1 input, aka the first input. Later we should make it
         possible to loop over more parts of the summaries list.
     """
-    def __init__(self, root_path, subset, summarie, spatial_transform=None,
-                 temporal_transform=None, target_transform=None):
+    def __init__(self, root_path, subset, summarie):
 
-        assert temporal_transform is None, 'Temporal transform not supported for AbideDataset'
-        assert target_transform is None,   'Target transform not supported for AbideDataset'
         assert subset in ('train', 'val', 'test')
 
         self._root_path = root_path
         self._subset = subset
         self._data_to_train = summarie
-
-        self._spatial_transform = spatial_transform
-        self._temporal_transform = temporal_transform
-        self._target_transform = target_transform
 
         self._make_dataset()
 
@@ -46,7 +39,6 @@ class AbideDataset(Dataset):
     def _make_dataset(self):
 
         self._data_files = glob.glob(os.path.join(self._root_path, '{}.hdf5'.format(self._subset)))
-
         # Get the number of samples
         with h5py.File(self._data_files[0]) as hf:
             self._num_examples_per_file = len(hf[self._data_to_train])
@@ -59,6 +51,7 @@ class AbideDataset(Dataset):
         print('  Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
         print('  Number of {} examples found:   {}'.format(self._subset, len(self)))
         print('  Number of {} targets found:    {}'.format(self._subset, len(self._classes)))
+        print(' ')
 
     def __len__(self):
         return self._num_examples
@@ -67,7 +60,6 @@ class AbideDataset(Dataset):
 
         container_idx = idx // self._num_examples_per_file
         example_idx = (idx-(container_idx*self._num_examples_per_file))
-        print(example_idx)
 
         # Get the asked example from the datafile from the wanted dataset
         with h5py.File(self._data_files[container_idx], 'r') as hf:
@@ -76,25 +68,7 @@ class AbideDataset(Dataset):
 
         # Convert both numpy arrays to tensors
         pic = torch.from_numpy(pic)
+        pic = pic.squeeze(-1)
+        pic = pic.unsqueeze(0)
         target = torch.from_numpy(np.asarray(target, np.int64))
         return pic, target
-
-    @property
-    def classes(self):
-        return self._classes
-
-    @property
-    def subset(self):
-        return self._subset
-
-    @property
-    def num_classes(self):
-        return len(self._classes)
-
-    @property
-    def target_offset(self):
-        return self._target_offset
-
-
-# You can run/test this file using the below adapt the root path though!
-#x = AbideDataset("/home/lisasalomons/Desktop/afstudeerproject_KI/Lisa")

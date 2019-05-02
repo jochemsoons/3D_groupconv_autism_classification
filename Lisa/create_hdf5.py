@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 
+
 f = h5py.File('/home/lisasalomons/Desktop/fmri_summary_abideI_II.hdf5',
 'r')
 
