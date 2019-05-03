@@ -11,13 +11,6 @@ import glob
 
 
 class AbideDataset(Dataset):
-    """ root_path = Path to directionary where the data can be found
-        subset = Name of the dataset we use, we don't yet have split the data so
-        this comes later, so right now I put it standard to train to test.
-        data_to_train = Says on which part of the summaries the CNN should train,
-        Standard is the T1 input, aka the first input. Later we should make it
-        possible to loop over more parts of the summaries list.
-    """
     def __init__(self, root_path, subset, summary):
 
 
@@ -39,10 +32,9 @@ class AbideDataset(Dataset):
 
         # We have two classe
         self._classes = set([0,1])
-
-        print('  Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
-        print('  Number of {} examples found:   {}'.format(self._subset, len(self)))
-        print('  Number of {} targets found:    {}'.format(self._subset, len(self._classes)))
+        print('Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
+        print('Number of {} examples found:   {}'.format(self._subset, len(self)))
+        print('Number of {} targets found:    {}'.format(self._subset, len(self._classes)))
 
     def __len__(self):
         return self._num_examples
