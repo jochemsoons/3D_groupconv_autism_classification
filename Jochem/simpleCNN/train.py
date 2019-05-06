@@ -101,4 +101,5 @@ with torch.no_grad():
 
 # Save the model and plot
 if args.save_model:
+    print("Saving model...")
     torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.ckpt')
