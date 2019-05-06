@@ -25,7 +25,7 @@ learning_rate = args.lr
 # Create train and validation set
 print("Loading data...\n")
 train_set = AbideDataset(DATA_PATH, "train", args.summary)
-val_set = AbideDataset(DATA_PATH, "validation", args.summary)
+val_set = AbideDataset(DATA_PATH, "test", args.summary)
 print("#" * 60)
 
 # Initialize dataloaders
@@ -77,7 +77,6 @@ for epoch in range(num_epochs):
         _, predicted = torch.max(outputs.data, 1)
         correct = (predicted == labels).sum().item()
         acc_list.append(correct / total)
-
         if (i + 1) % args.log_interval == 0:
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
@@ -100,6 +99,4 @@ with torch.no_grad():
     print('Test Accuracy of the model on the {} test images: {} %'.format(len(val_set), (correct / total) * 100))
 
 # Save the model and plot
-if args.save_model:
-    print("Saving model...")
-    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.ckpt')
+torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.ckpt')
