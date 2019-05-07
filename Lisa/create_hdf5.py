@@ -43,4 +43,4 @@ def write_subset_files(file, summary, train_ratio, val_ratio):
 
     train_f.close(), val_f.close(), test_f.close()
 
-write_subset_files(f, 'T1', 0.05, 0.9)
+write_subset_files(f, 'autocorr', 0.7, 0.001)
