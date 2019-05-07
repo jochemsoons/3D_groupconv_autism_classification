@@ -3,8 +3,10 @@ import torch
 import torch.nn as nn
 
 
+
 from AbideData import AbideDataset
 from Conv3DNet import Conv3DNet
+import ResNet3D
 from config import parse_opts, print_config
 
 args = parse_opts()
@@ -42,7 +44,55 @@ else: GPU = False
 print("Using {} device...".format(device))
 
 # Initialize model
-model = Conv3DNet(num_classes)
+assert args.model in ['conv3d', 'resnet']
+if args.model == 'conv3d':
+    model = Conv3DNet(num_classes)
+elif args.model == 'resnet':
+    assert args.model_depth in [10, 18, 34, 50, 101, 152, 200]
+
+    if args.model_depth == 10:
+
+            model = ResNet3D.resnet10(
+                num_classes=num_classes,
+                shortcut_type=args.resnet_shortcut)
+
+    elif args.model_depth == 18:
+
+        model = ResNet3D.resnet18(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+
+    elif args.model_depth == 34:
+
+        model = ResNet3D.resnet34(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+
+    elif args.model_depth == 50:
+
+        model = ResNet3D.resnet50(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+
+    elif args.model_depth == 101:
+
+        model = ResNet3D.resnet101(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+    elif args.model_depth == 152:
+
+        model = ResNet3D.resnet152(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+
+    elif args.model_depth == 200:
+
+        model = ResNet3D.resnet200(
+            num_classes=num_classes,
+            shortcut_type=args.resnet_shortcut)
+
+
+
 if GPU:
     model = model.cuda()
 
@@ -56,6 +106,7 @@ total_step = len(train_loader)
 loss_list = []
 acc_list = []
 
+model.train()
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):
         if GPU:

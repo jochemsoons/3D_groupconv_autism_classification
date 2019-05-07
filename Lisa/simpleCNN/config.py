@@ -1,3 +1,4 @@
+
 import argparse
 
 def parse_opts():
@@ -10,6 +11,7 @@ def parse_opts():
 
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
+
     parser.add_argument('--test_batch_size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
 
@@ -38,6 +40,14 @@ def parse_opts():
 
     parser.add_argument('--num_classes', type=int, default=2)
 
+    parser.add_argument('--model', type=str, required=True)
+    ## ResNet parameters
+    parser.add_argument('--model_depth', default=18, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
+    parser.add_argument('--resnet_shortcut', default='B', type=str, help='Shortcut type of resnet (A | B)')
+    parser.add_argument('--wide_resnet_k', default=2, type=int, help='Wide resnet k')
+    parser.add_argument('--resnext_cardinality', default=32, type=int, help='ResNeXt cardinality')
+    parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
+
     args = parser.parse_args()
     return args
 
@@ -53,4 +63,4 @@ def print_config(args):
     print("learning rate: \t \t {}".format(args.lr))
     print("momentum: \t \t {}".format(args.momentum))
     print("seed: \t \t \t {}".format(args.seed))
-    print("cuda GPU: \t \t No") if args.no_cuda else print("cuda GPU: \t \t No")
+    print("cuda GPU: \t \t No") if args.no_cuda else print("cuda GPU: \t \t Yes")
