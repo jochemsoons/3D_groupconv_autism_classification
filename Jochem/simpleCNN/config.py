@@ -8,6 +8,10 @@ def parse_opts():
 
     parser.add_argument('--model_store_path', type=str, required=True, help='location path of model checkpoints')
 
+    parser.add_argument('--test_ratio', type=float, default=0.3, help='ratio that defines size of test set')
+
+    parser.add_argument('--train_val_ratio', type=float, default=0.7, help='ratio of train/val set sizes')
+
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
 
@@ -26,9 +30,6 @@ def parse_opts():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
 
-    parser.add_argument('--log_interval', type=int, default=5, metavar='N',
-                        help='how many batches to wait before logging training status')
-
     parser.add_argument('--save_model', action='store_true', default=False,
                         help='For Saving the current Model')
 
@@ -42,12 +43,12 @@ def parse_opts():
 def print_config(args):
     print("PARAMETERS:\n")
     print("data path: \t \t {}".format(args.data_path))
-    print("model storgae path: \t {}".format(args.model_store_path))
-    print("summary to h: \t \t {}".format(args.data_path))
-    print("model storgtrain on: \t {}".format(args.summary))
+    print("model storage path: \t {}".format(args.model_store_path))
+    print("train/val ratio: \t {}".format(args.train_val_ratio))
+    print("test ratio: \t \t {}".format(args.test_ratio))
+    print("summary to train on: \t {}".format(args.summary))
     print("number of classes: \t {}".format(args.num_classes))
     print("number of epochs: \t {}".format(args.epochs))
-    print("log interval: \t \t {}".format(args.log_interval))
     print("batch size: \t \t {}".format(args.batch_size))
     print("learning rate: \t \t {}".format(args.lr))
     print("momentum: \t \t {}".format(args.momentum))

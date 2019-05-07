@@ -2,25 +2,15 @@ import h5py
 import numpy as np
 import random
 
+def write_subset_files(file, data_path, summary, test_ratio, train_val_ratio):
+    train_f = h5py.File(data_path +'train.hdf5', 'w')
+    val_f = h5py.File(data_path + 'validation.hdf5', 'w')
+    test_f = h5py.File(data_path +'test.hdf5', 'w')
 
-# f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/fmri_summary_abideI_II.hdf5',
-# 'r')
-
-# train_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/train.hdf5', 'w')
-
-# val_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/validation.hdf5',
-# 'w')
-
-# test_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5',
-# 'w')
-
-def write_subset_files(file, summary, test_ratio, train_val_ratio):
     summaries = file['summaries']
     attrs = summaries.attrs
     labels = attrs['DX_GROUP']
     dataset = summaries[summary]
-    # dataset = dataset[:,20:23:,:,]
-    # print(dataset.shape)
     joined_set = list(zip(dataset, labels))
     random.shuffle(joined_set)
 

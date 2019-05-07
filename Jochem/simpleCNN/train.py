@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 import torch
 import torch.nn as nn
 
@@ -12,20 +13,25 @@ print("#" * 60)
 print_config(args)
 print("#" * 60)
 
-# Data paths for local run of code
-DATA_PATH = args.data_path
-MODEL_STORE_PATH = args.model_store_path
-
 # Set parameters
 num_epochs = args.epochs
 num_classes = args.num_classes
 batch_size = args.batch_size
 learning_rate = args.lr
 
+# Paths of data and model storage
+DATA_PATH = args.data_path
+MODEL_STORE_PATH = args.model_store_path
+
+print("Splitting dataset into subsets...")
+f = h5py.File(DATA_PATH  + 'fmri_summary_abideI_II.hdf5', 'r')
+write_subset_files(f, DATA_PATH, args.summary, args.test_ratio, args.train_val_ratio)
+
 # Create train and validation set
-print("Loading data...\n")
+print("Loading data subsets...\n")
 train_set = AbideDataset(DATA_PATH, "train", args.summary)
 val_set = AbideDataset(DATA_PATH, "validation", args.summary)
+test_set = AbideDataset(DATA_PATH, "test", args.summary)
 print("#" * 60)
 
 # Initialize dataloaders
@@ -46,7 +52,7 @@ print("Initializing model...")
 model = Conv3DNet(num_classes)
 if GPU:
     model = model.cuda()
-print("Model initialized")
+print("Model initialized.")
 print("#" * 60)
 
 def validation_acc(model, val_loader, GPU):
@@ -74,7 +80,6 @@ print("Starting training phase...")
 print("Training on {} train images".format(len(train_loader.dataset)))
 print("Validating on {} validation images\n".format(len(val_loader.dataset)))
 
-total_step = len(train_loader)
 train_acc_list = []
 train_loss_list = []
 val_acc_list = []
@@ -83,7 +88,7 @@ for epoch in range(num_epochs):
     total = len(train_loader.dataset)
     total_correct = 0
     total_loss = 0
-    for i, (images, labels) in enumerate(train_loader):
+    for images, labels in train_loader:
         if GPU:
             images = images.to(device)
             labels = labels.to(device)
