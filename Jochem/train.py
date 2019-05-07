@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from create_hdf5 import write_subset_files
+
 from AbideData import AbideDataset
 from Conv3DNet import Conv3DNet
 from config import parse_opts, print_config
@@ -33,24 +33,25 @@ train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shu
 val_loader =  torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
+print(use_cuda)
 torch.manual_seed(args.seed)
 
 device = torch.device("cuda" if use_cuda else "cpu")
+print(device)
 if torch.cuda.is_available() and use_cuda: GPU = True
 else: GPU = False
+print(GPU)
 
 print("Using {} device...".format(device))
 
 # Initialize model
-print("Initializing model...")
 model = Conv3DNet(num_classes)
 if GPU:
     model = model.cuda()
-print("Model initialized")
-print("#" * 60)
 
-def validation_acc(model, val_loader, GPU):
+def test_evaluation(model, val_loader, GPU):
 # Test the model
+    print("\nStarting evaluation...")
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -63,26 +64,23 @@ def validation_acc(model, val_loader, GPU):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-        return (correct / total) * 100
+        val_acc = (correct / total) * 100
+
+        print('Test Accuracy of the model on the {} validation images: {} %\n'.format(len(val_loader.dataset), val_acc))
+        return val_acc
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train the model
-print("Starting training phase...")
-print("Training on {} train images".format(len(train_loader.dataset)))
-print("Validating on {} validation images\n".format(len(val_loader.dataset)))
-
+print("Starting training phase...\n")
 total_step = len(train_loader)
+loss_list = []
 train_acc_list = []
-train_loss_list = []
 val_acc_list = []
 
 for epoch in range(num_epochs):
-    total = len(train_loader.dataset)
-    total_correct = 0
-    total_loss = 0
     for i, (images, labels) in enumerate(train_loader):
         if GPU:
             images = images.to(device)
@@ -91,7 +89,7 @@ for epoch in range(num_epochs):
         # Run the forward pass
         outputs = model(images)
         loss = criterion(outputs, labels)
-        total_loss += loss.item()
+        loss_list.append(loss.item())
 
         # Backprop and perform Adam optimisation
         optimizer.zero_grad()
@@ -99,18 +97,25 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         # Track the accuracy
+        total = labels.size(0)
         _, predicted = torch.max(outputs.data, 1)
-        total_correct += (predicted == labels).sum().item()
+        correct = (predicted == labels).sum().item()
+        train_acc_list.append(correct / total)
 
-    # Calculate accuracy scores
-    train_acc = (total_correct / total) * 100
-    val_acc = validation_acc(model, val_loader, GPU)
+        if (i + 1) % args.log_interval == 0:
+            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                  .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
+                          (correct / total) * 100))
 
-    # Append values to lists and print epoch results
-    train_acc_list.append(train_acc)
+    val_acc = test_evaluation(model, val_loader, GPU)
     val_acc_list.append(val_acc)
-    train_loss_list.append(total_loss)
-    print("Epoch [{}/{}], Loss: {:.4f}, Train acc: {:.2f}%, Val. acc: {:.2f}%".format(epoch + 1, num_epochs, total_loss, train_acc, val_acc))
-
     if args.save_model:
+        print("Saving model...")
         torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_epoch{}.ckpt'.format(epoch+1))
+        print()
+
+
+# # Save the model and plot
+# if args.save_model:
+#     print("Saving model...")
+#     torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.ckpt')

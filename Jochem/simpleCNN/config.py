@@ -10,8 +10,6 @@ def parse_opts():
 
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--test_batch_size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
 
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -42,10 +40,11 @@ def parse_opts():
     return args
 
 def print_config(args):
-    print("PARAMETERS:")
+    print("PARAMETERS:\n")
     print("data path: \t \t {}".format(args.data_path))
-    print("model storage path: \t {}".format(args.model_store_path))
-    print("summary to train on: \t {}".format(args.summary))
+    print("model storgae path: \t {}".format(args.model_store_path))
+    print("summary to h: \t \t {}".format(args.data_path))
+    print("model storgtrain on: \t {}".format(args.summary))
     print("number of classes: \t {}".format(args.num_classes))
     print("number of epochs: \t {}".format(args.epochs))
     print("log interval: \t \t {}".format(args.log_interval))
@@ -53,4 +52,4 @@ def print_config(args):
     print("learning rate: \t \t {}".format(args.lr))
     print("momentum: \t \t {}".format(args.momentum))
     print("seed: \t \t \t {}".format(args.seed))
-    print("cuda GPU: \t \t No") if args.no_cuda else print("cuda GPU: \t \t No")
+    print("cuda GPU: \t \t No\n") if args.no_cuda else print("cuda GPU: \t \t Yes\n")

@@ -3,16 +3,16 @@ import numpy as np
 import random
 
 
-f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/fmri_summary_abideI_II.hdf5',
-'r')
+# f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/fmri_summary_abideI_II.hdf5',
+# 'r')
 
-train_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/train.hdf5', 'w')
+# train_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/train.hdf5', 'w')
 
-val_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/validation.hdf5',
-'w')
+# val_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/validation.hdf5',
+# 'w')
 
-test_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5',
-'w')
+# test_f = h5py.File('/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5',
+# 'w')
 
 def write_subset_files(file, summary, test_ratio, train_val_ratio):
     summaries = file['summaries']
@@ -33,8 +33,6 @@ def write_subset_files(file, summary, test_ratio, train_val_ratio):
     test_labels = labels[0:test_index]
 
     train_data = dataset[test_index:train_index]
-    print(train_data[0].shape)
-
     train_labels = labels[test_index:train_index]
 
     val_data = dataset[train_index:]
@@ -48,5 +46,3 @@ def write_subset_files(file, summary, test_ratio, train_val_ratio):
     test_f.create_dataset('labels', data=test_labels)
 
     train_f.close(), val_f.close(), test_f.close()
-
-write_subset_files(f, 'T1', 0.3, 0.8)

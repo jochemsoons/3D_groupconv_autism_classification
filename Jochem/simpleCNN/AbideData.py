@@ -9,7 +9,6 @@ import torch
 import h5py
 import glob
 
-
 class AbideDataset(Dataset):
     def __init__(self, root_path, subset, summary):
 
@@ -34,14 +33,13 @@ class AbideDataset(Dataset):
         self._classes = set([0,1])
         print('Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
         print('Number of {} examples found:   {}'.format(self._subset, len(self)))
-        print('Number of {} targets found:    {}'.format(self._subset, len(self._classes)))
+        print('Number of {} targets found:    {}\n'.format(self._subset, len(self._classes)))
 
     def __len__(self):
         return self._num_examples
 
     def __getitem__(self, idx):
 
-        # Get the asked example from the datafile from the wanted dataset
         with h5py.File(self._data_files[0], 'r') as hf:
             img = hf[self._data_to_train][idx]
             target = hf['labels'][idx]
@@ -51,23 +49,6 @@ class AbideDataset(Dataset):
         img = torch.unsqueeze(img, 0)
         target = torch.from_numpy(np.asarray(target, np.int64))
         return img, target
-
-    # def get_batch(self, low_index, high_index):
-    #     x_data = []
-    #     y_data = []
-
-    #     if low_index < 0 or high_index > len(self):
-    #         return [], []
-
-    #     for i in range(low_index, high_index):
-    #         image, label = self[i]
-    #         x_data.append(np.asarray(image, dtype='float32'))
-    #         if label == 0:
-    #             y_data.append([1, 0])
-    #         else:
-    #             y_data.append([0, 1])
-
-    #     return np.asarray(x_data), np.asarray(y_data)
 
     @property
     def classes(self):
@@ -80,9 +61,5 @@ class AbideDataset(Dataset):
     @property
     def num_classes(self):
         return len(self._classes)
-
-    @property
-    def target_offset(self):
-        return self._target_offset
 
 
