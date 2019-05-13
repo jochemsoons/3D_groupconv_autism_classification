@@ -1,22 +1,22 @@
 import numpy as np
+import h5py
 import torch
 import torch.nn as nn
 
-
-
+from create_hdf5 import write_subset_files
 from AbideData import AbideDataset
 from Conv3DNet import Conv3DNet
 import ResNet3D
 from config import parse_opts, print_config
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
 
 args = parse_opts()
 print("#" * 60)
 print_config(args)
 print("#" * 60)
 
-# Data paths for local run of code
-DATA_PATH = args.data_path
-MODEL_STORE_PATH = args.model_store_path
 
 # Set parameters
 num_epochs = args.epochs
@@ -24,31 +24,47 @@ num_classes = args.num_classes
 batch_size = args.batch_size
 learning_rate = args.lr
 
-# Create train and validation set
-print("Loading data...\n")
+# Paths for data and model storage
+DATA_PATH = args.data_path
+MODEL_STORE_PATH = args.model_store_path
+
+# Splitting
+print("Splitting dataset into subsets...")
+f = h5py.File(DATA_PATH  + 'fmri_summary_abideI_II.hdf5', 'r')
+write_subset_files(f, DATA_PATH, args.summary, args.test_ratio, args.train_val_ratio)
+
+# Create train, validation and test set
+print("Loading data subsets...\n")
 train_set = AbideDataset(DATA_PATH, "train", args.summary)
-val_set = AbideDataset(DATA_PATH, "test", args.summary)
+val_set = AbideDataset(DATA_PATH, "validation", args.summary)
+test_set = AbideDataset(DATA_PATH, "test", args.summary)
 print("#" * 60)
 
 # Initialize dataloaders
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
-val_loader =  torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=True)
+train_loader= torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+val_loader =  torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
+test_loader =  torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
+# Check for GPU and use it.
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
-
 device = torch.device("cuda" if use_cuda else "cpu")
-if torch.cuda.is_available(): GPU = True
+if use_cuda: GPU = True
 else: GPU = False
-
 print("Using {} device...".format(device))
 
-# Initialize model
+# Initialize model Conv3d or ResNet
 assert args.model in ['conv3d', 'resnet']
 if args.model == 'conv3d':
     model = Conv3DNet(num_classes)
 elif args.model == 'resnet':
-    assert args.model_depth in [10, 18, 34, 50, 101, 152, 200]
+    assert args.model_depth in [8, 10]
+
+    if args.model_depth == 8:
+
+            model = ResNet3D.resnet08(
+                num_classes=num_classes,
+                shortcut_type=args.resnet_shortcut)
 
     if args.model_depth == 10:
 
@@ -56,45 +72,28 @@ elif args.model == 'resnet':
                 num_classes=num_classes,
                 shortcut_type=args.resnet_shortcut)
 
-    elif args.model_depth == 18:
 
-        model = ResNet3D.resnet18(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-
-    elif args.model_depth == 34:
-
-        model = ResNet3D.resnet34(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-
-    elif args.model_depth == 50:
-
-        model = ResNet3D.resnet50(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-
-    elif args.model_depth == 101:
-
-        model = ResNet3D.resnet101(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-    elif args.model_depth == 152:
-
-        model = ResNet3D.resnet152(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-
-    elif args.model_depth == 200:
-
-        model = ResNet3D.resnet200(
-            num_classes=num_classes,
-            shortcut_type=args.resnet_shortcut)
-
-
-
-if GPU:
+# Transfer model to GPU
+if use_cuda:
     model = model.cuda()
+print('Model initialized')
+print("#" * 60)
+
+def validation_acc(model, val_loader, GPU):
+# Test the model
+    model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in val_loader:
+            if GPU:
+                images = images.to(device)
+                labels = labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+        return (correct / total) * 100
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -102,13 +101,19 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train the model
 print("Starting training phase...")
-total_step = len(train_loader)
-loss_list = []
-acc_list = []
+print("Training on {} train images".format(len(train_loader.dataset)))
+print("Validating on {} validation images\n".format(len(val_loader.dataset)))
 
-model.train()
+train_acc_list = []
+train_loss_list = []
+val_acc_list = []
+
 for epoch in range(num_epochs):
-    for i, (images, labels) in enumerate(train_loader):
+    model.train()
+    total = len(train_loader.dataset)
+    total_correct = 0
+    total_loss = 0.0
+    for images, labels in train_loader:
         if GPU:
             images = images.to(device)
             labels = labels.to(device)
@@ -116,7 +121,7 @@ for epoch in range(num_epochs):
         # Run the forward pass
         outputs = model(images)
         loss = criterion(outputs, labels)
-        loss_list.append(loss.item())
+        total_loss += loss.item()
 
         # Backprop and perform Adam optimisation
         optimizer.zero_grad()
@@ -124,30 +129,37 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         # Track the accuracy
-        total = labels.size(0)
         _, predicted = torch.max(outputs.data, 1)
-        correct = (predicted == labels).sum().item()
-        acc_list.append(correct / total)
-        if (i + 1) % args.log_interval == 0:
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
-                  .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
-                          (correct / total) * 100))
+        total_correct += (predicted == labels).sum().item()
 
-# Test the model
-print("Starting evaluation...")
-model.eval()
-with torch.no_grad():
-    correct = 0
-    total = 0
-    for images, labels in val_loader:
-        if GPU:
-            images = images.to(device)
-            labels = labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-    print('Test Accuracy of the model on the {} test images: {} %'.format(len(val_set), (correct / total) * 100))
+    # Calculate accuracy scores
+    train_acc = (total_correct /total) * 100
+    val_acc = validation_acc(model, val_loader, GPU)
 
-# Save the model and plot
-torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.ckpt')
+    # Append values to lists and print epoch results
+    train_acc_list.append(train_acc)
+    val_acc_list.append(val_acc)
+    train_loss_list.append(total_loss / (total/batch_size))
+    print("Epoch [{}/{}], Loss: {:.4f}, Train acc: {:.2f}%, Val. acc: {:.2f}%".format(epoch + 1, num_epochs, total_loss / (total/batch_size), train_acc, val_acc))
+
+    if args.save_model:
+        torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_epoch{}.ckpt'.format(epoch+1))
+        torch.save(optimizer.state_dict(),MODEL_STORE_PATH + 'optimizer_epoch{}.ckpt'.format(epoch+1))
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_title("training vs validation accuracy for {}".format(args.model))
+ax.plot(range(num_epochs), train_acc_list, 'r', label='train')
+ax.plot(range(num_epochs), val_acc_list, 'b', label='validation')
+ax.set_xlabel('epochs')
+ax.set_ylabel('percentage correct')
+ax.legend(loc='best')
+fig.savefig('accuracy.png')
+
+fig2 = plt.figure()
+ax2 = fig2.add_subplot(111)
+ax2.plot(range(num_epochs), train_loss_list, 'r')
+ax2.set_title("Training loss for the {} model".format(args.model))
+ax2.set_xlabel('epochs')
+ax2.set_ylabel('MSE loss')
+fig2.savefig('loss.png')

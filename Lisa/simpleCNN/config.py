@@ -9,11 +9,12 @@ def parse_opts():
 
     parser.add_argument('--model_store_path', type=str, required=True, help='location path of model checkpoints')
 
+    parser.add_argument('--test_ratio', type=float, default=0.3, help='ratio that defines size of test set')
+
+    parser.add_argument('--train_val_ratio', type=float, default=0.7, help='ratio of train/val set sizes')
+
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-
-    parser.add_argument('--test_batch_size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: 1000)')
 
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -21,17 +22,12 @@ def parse_opts():
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
 
-    parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
-                        help='SGD momentum (default: 0.5)')
 
     parser.add_argument('--no_cuda', action='store_true', default=False,
                         help='disables CUDA training')
 
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
-
-    parser.add_argument('--log_interval', type=int, default=5, metavar='N',
-                        help='how many batches to wait before logging training status')
 
     parser.add_argument('--save_model', action='store_true', default=False,
                         help='For Saving the current Model')
@@ -41,12 +37,14 @@ def parse_opts():
     parser.add_argument('--num_classes', type=int, default=2)
 
     parser.add_argument('--model', type=str, required=True)
+
+    parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
+
     ## ResNet parameters
     parser.add_argument('--model_depth', default=18, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
+
     parser.add_argument('--resnet_shortcut', default='B', type=str, help='Shortcut type of resnet (A | B)')
-    parser.add_argument('--wide_resnet_k', default=2, type=int, help='Wide resnet k')
-    parser.add_argument('--resnext_cardinality', default=32, type=int, help='ResNeXt cardinality')
-    parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
+
 
     args = parser.parse_args()
     return args
@@ -55,6 +53,12 @@ def print_config(args):
     print("PARAMETERS:")
     print("data path: \t \t {}".format(args.data_path))
     print("model storage path: \t {}".format(args.model_store_path))
+    print("train/val ratio: \t {}".format(args.train_val_ratio))
+    print("test ratio: \t \t {}".format(args.test_ratio))
+    print("model:\t \t {}".format(args.model))
+    if args.model == "resnet":
+        print("model depth: \t \t {}".format(args.model_depth))
+        print("shortcut type: \t \t {}".format(args.resnet_shortcut))
     print("summary to train on: \t {}".format(args.summary))
     print("number of classes: \t {}".format(args.num_classes))
     print("number of epochs: \t {}".format(args.epochs))
