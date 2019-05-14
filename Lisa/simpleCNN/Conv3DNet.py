@@ -8,41 +8,28 @@ class Conv3DNet(nn.Module):
         self.conv_layer1 = nn.Sequential(
             nn.Conv3d(1, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1]),
             nn.ReLU(inplace=True),
-            # nn.Conv3d(8, 8, kernel_size=[3, 3, 3], stride=[1, 1, 1]),
-            # nn.ReLU(inplace=True),
-            # nn.Conv3d(8, 8, kernel_size=[3, 3, 3], stride=[1, 1, 1]),
-            # nn.ReLU(inplace=True),
             nn.MaxPool3d(kernel_size=[2, 2, 2], stride=[2, 2, 2]))
         self.conv_layer2 = nn.Sequential(
-            nn.Conv3d(64, 128, kernel_size=[3, 3, 3], stride=2),
+            nn.Conv3d(64, 128, kernel_size=[3, 3, 3], stride=[1,1,1]),
             nn.ReLU(inplace=True),
-            # nn.Conv3d(16, 16, kernel_size=[3,3,3], stride=[1,1,1]),
-            # nn.ReLU(inplace=True),
-            # nn.Conv3d(16, 16, kernel_size=[3,3,3], stride=[1,1,1]),
-            # nn.ReLU(inplace=True),
-            nn.MaxPool3d(kernel_size=[2, 2, 2], stride=[1, 1, 1]))
+            nn.MaxPool3d(kernel_size=[2, 2, 2], stride=[2,2,2]))
         self.conv_layer3 = nn.Sequential(
-            # nn.Conv3d(16, 32, kernel_size=[3, 3, 3], stride=[1, 1, 1]),
-            # nn.ReLU(inplace=True),
-            nn.Conv3d(128, 256, kernel_size=[3,3,3], stride=2),
-            nn.BatchNorm3d(256),
+            nn.Conv3d(128, 256, kernel_size=[3,3,3], stride=[1,1,1]),
             nn.ReLU(inplace=True),
-            # nn.Conv3d(32, 32, kernel_size=[3, 3, 3], stride=[1, 1, 1]),
-            # nn.ReLU(inplace=True),
+            nn.BatchNorm3d(256),
             nn.MaxPool3d(kernel_size=[2, 2, 2], stride=2))
         self.avgpool = nn.AvgPool3d(kernel_size=[2,2,2], stride=[2,2,2])
         self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(256, num_classes)
-        # self.fc2 = nn.Linear(1000, num_classes)
+        self.fc1 = nn.Linear(512, num_classes)
 
 
 
     def forward(self, x):
         out = self.conv_layer1(x)
         out = self.drop_out(self.conv_layer2(out))
-        out = self.drop_out(self.avgpool(self.conv_layer3(out)))
+        out = self.drop_out(self.conv_layer3(out))
+        out = self.drop_out(self.avgpool(out))
         out = out.reshape(out.size(0), -1)
         out = self.fc1(out)
-        # out = self.fc2(out)
         out = nn.functional.softmax(out, dim=0)
         return out

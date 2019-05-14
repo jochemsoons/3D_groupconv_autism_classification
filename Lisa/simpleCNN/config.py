@@ -22,7 +22,6 @@ def parse_opts():
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
 
-
     parser.add_argument('--no_cuda', action='store_true', default=False,
                         help='disables CUDA training')
 
@@ -40,9 +39,7 @@ def parse_opts():
 
     parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
 
-    ## ResNet parameters
-    parser.add_argument('--model_depth', default=18, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
-
+    ## ResNet parameter
     parser.add_argument('--resnet_shortcut', default='B', type=str, help='Shortcut type of resnet (A | B)')
 
 
@@ -57,14 +54,11 @@ def print_config(args):
     print("test ratio: \t \t {}".format(args.test_ratio))
     print("model:\t \t {}".format(args.model))
     if args.model == "resnet":
-        print("model depth: \t \t {}".format(args.model_depth))
         print("shortcut type: \t \t {}".format(args.resnet_shortcut))
     print("summary to train on: \t {}".format(args.summary))
     print("number of classes: \t {}".format(args.num_classes))
     print("number of epochs: \t {}".format(args.epochs))
-    print("log interval: \t \t {}".format(args.log_interval))
     print("batch size: \t \t {}".format(args.batch_size))
     print("learning rate: \t \t {}".format(args.lr))
-    print("momentum: \t \t {}".format(args.momentum))
     print("seed: \t \t \t {}".format(args.seed))
     print("cuda GPU: \t \t No") if args.no_cuda else print("cuda GPU: \t \t Yes")
