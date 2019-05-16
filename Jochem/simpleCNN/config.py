@@ -4,9 +4,15 @@ def parse_opts():
 
     parser = argparse.ArgumentParser(description='3D-CNN For autism detection')
 
+    parser.add_argument('--explore_data', action='store_true', default=False, help='if given, no training is performed but an exploration of the dataset is given')
+
     parser.add_argument('--data_path', type=str, required=True, help='location path of data')
 
     parser.add_argument('--model_store_path', type=str, required=True, help='location path of model checkpoints')
+
+    parser.add_argument('--plot_store_path', type=str, required=True, help='location path of results plots')
+
+    parser.add_argument('--model', type=str, required=True)
 
     parser.add_argument('--test_ratio', type=float, default=0.3, help='ratio that defines size of test set')
 
@@ -44,6 +50,7 @@ def print_config(args):
     print("PARAMETERS:\n")
     print("data path: \t \t {}".format(args.data_path))
     print("model storage path: \t {}".format(args.model_store_path))
+    print("plots storage path: \t {}".format(args.plot_store_path))
     print("train/val ratio: \t {}".format(args.train_val_ratio))
     print("test ratio: \t \t {}".format(args.test_ratio))
     print("summary to train on: \t {}".format(args.summary))
