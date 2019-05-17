@@ -48,7 +48,7 @@ test_set = AbideDataset(DATA_PATH, "test", args.summary)
 print("#" * 60)
 
 # Initialize dataloaders
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=False)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
 val_loader =  torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
