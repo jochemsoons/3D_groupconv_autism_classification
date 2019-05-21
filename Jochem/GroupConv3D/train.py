@@ -105,6 +105,7 @@ train_acc_list = []
 train_loss_list = []
 val_acc_list = []
 val_loss_list = []
+best_val_acc = 0
 
 for epoch in range(num_epochs):
     model.train()
@@ -146,30 +147,43 @@ for epoch in range(num_epochs):
 
     print("Epoch [{}/{}], Train loss: {:.4f}, Train acc: {:.2f}%, Val. loss: {:.4f}, Val. acc: {:.2f}%".format(epoch + 1, num_epochs, train_loss, train_acc, val_loss, val_acc))
 
-    if args.save_model:
-        torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_epoch{}.ckpt'.format(epoch+1))
+    # Save model if this is specified
+    if args.save_model and best_val_acc <= val_acc:
+        best_val_acc = val_acc
+        torch.save(model.state_dict(), MODEL_STORE_PATH + '{}_model_epoch{}_valloss{:.4f}_valacc{:.2f}.pt'.format(args.model, epoch+1, val_loss, val_acc))
 
 # Summarize the training session
-print("Done. average val. acc: {:.2f}, best val. acc: {:.2f} ".format(sum(val_acc_list)/num_epochs, max(val_acc_list)))
+print("Done average val. acc: {:.2f}, best val. acc: {:.2f} ".format(sum(val_acc_list)/num_epochs, max(val_acc_list)))
+
+# Find train and validation accuray max
+t_acc_max = max(train_acc_list)
+t_xpos = train_acc_list.index(t_acc_max)
+t_epoch_max = range(num_epochs)[t_xpos]
+v_acc_max = max(val_acc_list)
+v_xpos = val_acc_list.index(v_acc_max)
+v_epoch_max = range(num_epochs)[v_xpos]
 
 # Plot the accuracy figure
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.set_title("training vs validation accuracy for {}".format(args.model))
-ax.plot(range(num_epochs), train_acc_list, 'r', label='train')
-ax.plot(range(num_epochs), val_acc_list, 'b', label='validation')
-ax.set_xlabel('epochs')
-ax.set_ylabel('percentage correct')
+ax.set_title("Training vs validation accuracy for {}".format(args.model))
+ax.plot(range(num_epochs), train_acc_list, 'r', label='Train')
+ax.plot(t_epoch_max, t_acc_max, color='r', marker=11, label='Train accuray max', markersize=10)
+ax.plot(range(num_epochs), val_acc_list, 'b', label='Validation')
+ax.plot(v_epoch_max, v_acc_max, color='b', marker=11, label='Validation accuray max', markersize=10)
+ax.set_xlabel('Epochs')
+ax.set_ylabel('Percentage correct')
 ax.legend(loc='best')
 fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), args.lr))
+
 
 # Plot the loss figure
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
-ax2.plot(range(num_epochs), train_loss_list, 'r', label='train loss')
-ax2.plot(range(num_epochs), val_loss_list, 'b', label='validation loss')
-ax2.set_title("Training and validation loss for the {} model".format(args.model))
-ax2.set_xlabel('epochs')
-ax2.set_ylabel('MSE loss')
+ax2.plot(range(num_epochs), train_loss_list, 'r', label='Train')
+ax2.plot(range(num_epochs), val_loss_list, 'b', label='Validation')
+ax2.set_title("Training loss vs validation loss for the {} model".format(args.model))
+ax2.set_xlabel('Epochs')
+ax2.set_ylabel('CE loss')
 ax2.legend(loc='best')
-fig2.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary, max(val_acc_list), args.lr))
+fig2.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), args.lr))
