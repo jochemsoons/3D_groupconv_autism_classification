@@ -11,15 +11,14 @@ __all__ = [
 ]
 
 
-def conv3x3x3(in_planes, out_planes, stride=1):
+def conv3x3x3(in_planes, out_planes, kernel_size, stride=1):
     # 3x3x3 convolution with padding
     return nn.Conv3d(
         in_planes,
         out_planes,
-        kernel_size=3,
+        kernel_size=kernel_size,
         stride=stride,
-        padding=1,
-        bias=False)
+        padding=1)
 
 
 def downsample_basic_block(x, planes, stride):
@@ -38,30 +37,29 @@ def downsample_basic_block(x, planes, stride):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, kernel_size, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3x3(inplanes, planes, stride)
+        self.conv1 = conv3x3x3(inplanes, planes, kernel_size, stride)
         self.bn1 = nn.BatchNorm3d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3x3(planes, planes)
-        self.bn2 = nn.BatchNorm3d(planes)
         self.downsample = downsample
         self.stride = stride
 
     def forward(self, x):
         residual = x
 
-        out =self.conv1(x)
-        out = self.bn1(out)
+        out = self.conv1(x)
         out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
+        out = self.bn1(out)
+
 
         if self.downsample is not None:
             residual = self.downsample(x)
 
+
         out += residual
         out = self.relu(out)
+
 
         return out
 
@@ -72,28 +70,19 @@ class ResNet(nn.Module):
                  block,
                  layers,
                  shortcut_type='B',
-                 num_classes=400):
+                 num_classes=2):
         self.inplanes = 64
         super(ResNet, self).__init__()
-        self.conv1 = nn.Conv3d(
-            1,
-            64,
-            kernel_size=7,
-            stride=(1, 2, 2),
-            padding=(3, 3, 3),
-            bias=False)
+        self.conv1 = nn.Conv3d(1, 64, kernel_size=[5,5,5])
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0], shortcut_type)
-        self.layer2 = self._make_layer(
-            block, 128, layers[1], shortcut_type, stride=2)
-        last_duration = int(math.ceil(45 / 16))
-        last_size = int(math.ceil(45 / 32))
-        self.avgpool = nn.AvgPool3d(
-            (last_duration, last_size, last_size), stride=1)
-        self.fc = nn.Linear(38400 * block.expansion, num_classes)
+        self.maxpool = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=2)
+        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type, kernel_size=[3,3,3])
+        self.layer2 = self._make_layer(block, 64, layers[1], shortcut_type, kernel_size=3)
+        self.fc1 = nn.Linear(42768 * block.expansion, 256)
+        self.fc2 = nn.Linear(256, num_classes)
         self.drop_out = nn.Dropout()
+
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
                 m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
@@ -101,7 +90,7 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self, block, planes, blocks, shortcut_type, stride=1):
+    def _make_layer(self, block, planes, blocks, shortcut_type,  kernel_size, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             if shortcut_type == 'A':
@@ -119,28 +108,31 @@ class ResNet(nn.Module):
                         bias=False), nn.BatchNorm3d(planes * block.expansion))
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers.append(block(self.inplanes, planes,  kernel_size, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
+            layers.append(block(self.inplanes, planes,  kernel_size))
 
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
         x = self.maxpool(x)
+
+        # First layer, has no residual block
+        x = self.conv1(x)
+        x = self.maxpool(x)
+        x = self.relu(x)
+        x = self.bn1(x)
+        x = self.drop_out(x)
 
         x = self.drop_out(self.layer1(x))
         x = self.drop_out(self.layer2(x))
-
-
-        x = self.drop_out(self.avgpool(x))
+        x = self.drop_out(self.layer3(x))
 
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
-
+        x = self.drop_out(self.fc1(x))
+        x = self.drop_out(self.fc2(x))
+        x = nn.functional.softmax(x, dim=1)
         return x
 
 def resnet10(**kwargs):

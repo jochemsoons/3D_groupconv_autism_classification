@@ -64,7 +64,6 @@ class Unit3D(nn.Module):
         self._use_bias = use_bias
         self.name = name
         self.padding = padding
-        print(in_channels)
         self.conv3d = nn.Conv3d(
             in_channels=in_channels,
             out_channels=self._output_channels,
@@ -200,19 +199,19 @@ class InceptionI3D(nn.Module):
         'Conv3d_1a_7x7',
         'MaxPool3d_2a_3x3',
         'Conv3d_2b_1x1',
-        'Conv3d_2c_3x3',
+        # 'Conv3d_2c_3x3',
         'MaxPool3d_3a_3x3',
         'Mixed_3b',
         'Mixed_3c',
         'MaxPool3d_4a_3x3',
-        'Mixed_4b',
-        'Mixed_4c',
-        'Mixed_4d',
-        'Mixed_4e',
-        'Mixed_4f',
-        'MaxPool3d_5a_2x2',
-        'Mixed_5b',
-        'Mixed_5c',
+        # 'Mixed_4b',
+        # 'Mixed_4c',
+        # 'Mixed_4d',
+        # 'Mixed_4e',
+        # 'Mixed_4f',
+        # 'MaxPool3d_5a_2x2',
+        # 'Mixed_5b',
+        # 'Mixed_5c',
         'logits',
     )
 
@@ -260,8 +259,8 @@ class InceptionI3D(nn.Module):
         end_point = 'Conv3d_2b_1x1'
         self.layers[end_point] = Unit3D(64, 64, kernel_size=[1, 1, 1], padding=0, name=name+end_point)
 
-        end_point = 'Conv3d_2c_3x3'
-        self.layers[end_point] = Unit3D(64, 192, kernel_size=[3, 3, 3], padding=1, name=name+end_point)
+        # end_point = 'Conv3d_2c_3x3'
+        # self.layers[end_point] = Unit3D(64, 192, kernel_size=[3, 3, 3], padding=1, name=name+end_point)
 
         end_point = 'MaxPool3d_3a_3x3'
         self.layers[end_point] = MaxPool3dSamePadding(kernel_size=[1, 3, 3], stride=(1, 2, 2), padding=0)
@@ -275,29 +274,29 @@ class InceptionI3D(nn.Module):
         end_point = 'MaxPool3d_4a_3x3'
         self.layers[end_point] = MaxPool3dSamePadding(kernel_size=[3, 3, 3], stride=(2, 2, 2), padding=0)
 
-        end_point = 'Mixed_4b'
-        self.layers[end_point] = InceptionModule(128 + 192 + 96 + 64, [192, 96, 208, 16, 48, 64], name+end_point)
+        # end_point = 'Mixed_4b'
+        # self.layers[end_point] = InceptionModule(128 + 192 + 96 + 64, [192, 96, 208, 16, 48, 64], name+end_point)
+        #
+        # end_point = 'Mixed_4c'
+        # self.layers[end_point] = InceptionModule(192 + 208 + 48 + 64, [160, 112, 224, 24, 64, 64], name+end_point)
+        #
+        # end_point = 'Mixed_4d'
+        # self.layers[end_point] = InceptionModule(160 + 224 + 64 + 64, [128, 128, 256, 24, 64, 64], name+end_point)
+        #
+        # end_point = 'Mixed_4e'
+        # self.layers[end_point] = InceptionModule(128 + 256 + 64 + 64, [112, 144, 288, 32, 64, 64], name+end_point)
+        #
+        # end_point = 'Mixed_4f'
+        # self.layers[end_point] = InceptionModule(112 + 288 + 64 + 64, [256, 160, 320, 32, 128, 128], name+end_point)
+        #
+        # end_point = 'MaxPool3d_5a_2x2'
+        # self.layers[end_point] = MaxPool3dSamePadding(kernel_size=[2, 2, 2], stride=(2, 2, 2), padding=0)
 
-        end_point = 'Mixed_4c'
-        self.layers[end_point] = InceptionModule(192 + 208 + 48 + 64, [160, 112, 224, 24, 64, 64], name+end_point)
-
-        end_point = 'Mixed_4d'
-        self.layers[end_point] = InceptionModule(160 + 224 + 64 + 64, [128, 128, 256, 24, 64, 64], name+end_point)
-
-        end_point = 'Mixed_4e'
-        self.layers[end_point] = InceptionModule(128 + 256 + 64 + 64, [112, 144, 288, 32, 64, 64], name+end_point)
-
-        end_point = 'Mixed_4f'
-        self.layers[end_point] = InceptionModule(112 + 288 + 64 + 64, [256, 160, 320, 32, 128, 128], name+end_point)
-
-        end_point = 'MaxPool3d_5a_2x2'
-        self.layers[end_point] = MaxPool3dSamePadding(kernel_size=[2, 2, 2], stride=(2, 2, 2), padding=0)
-
-        end_point = 'Mixed_5b'
-        self.layers[end_point] = InceptionModule(256 + 320 + 128 + 128, [256, 160, 320, 32, 128, 128], name+end_point)
-
-        end_point = 'Mixed_5c'
-        self.layers[end_point] = InceptionModule(256 + 320 + 128 + 128, [384, 192, 384, 48, 128, 128], name+end_point)
+        # end_point = 'Mixed_5b'
+        # self.layers[end_point] = InceptionModule(256 + 320 + 128 + 128, [256, 160, 320, 32, 128, 128], name+end_point)
+        #
+        # end_point = 'Mixed_5c'
+        # self.layers[end_point] = InceptionModule(256 + 320 + 128 + 128, [384, 192, 384, 48, 128, 128], name+end_point)
 
         end_point = 'AvgPool_5'
         self.layers[end_point] = nn.AvgPool3d(kernel_size=[2, 1, 1], stride=(1, 1, 1))
@@ -330,9 +329,7 @@ class InceptionI3D(nn.Module):
 
     def forward(self, x):
         for layer_name, layer in self.layers.items():
-            print("enter layer {}".format(layer_name))
             x = layer(x)
-            print("past layer {}".format(layer_name))
         if self._spatial_squeeze:
             x = x.squeeze(3).squeeze(3)
         return x  # logits
@@ -361,30 +358,30 @@ class InceptionI3D(nn.Module):
 
 ##########################################################################################
 ##########################################################################################
-
-def get_fine_tuning_parameters(model, ft_prefixes):
-
-    assert isinstance(ft_prefixes, str)
-
-    if ft_prefixes == '':
-        return model.parameters()
-
-    print('#'*60)
-    print('Setting finetuning layer prefixes: {}'.format(ft_prefixes))
-
-    ft_prefixes = ft_prefixes.split(',')
-    parameters = []
-    param_names = []
-    for param_name, param in model.named_parameters():
-        for prefix in ft_prefixes:
-            if param_name.startswith(prefix):
-                print('  Finetuning parameter: {}'.format(param_name))
-                parameters.append({'params': param, 'name': param_name})
-                param_names.append(param_name)
-
-    for param_name, param in model.named_parameters():
-        if param_name not in param_names:
-            # This sames a lot of GPU memory...
-            param.requires_grad = False
-
-    return parameters
+#
+# def get_fine_tuning_parameters(model, ft_prefixes):
+#
+#     assert isinstance(ft_prefixes, str)
+#
+#     if ft_prefixes == '':
+#         return model.parameters()
+#
+#     print('#'*60)
+#     print('Setting finetuning layer prefixes: {}'.format(ft_prefixes))
+#
+#     ft_prefixes = ft_prefixes.split(',')
+#     parameters = []
+#     param_names = []
+#     for param_name, param in model.named_parameters():
+#         for prefix in ft_prefixes:
+#             if param_name.startswith(prefix):
+#                 print('  Finetuning parameter: {}'.format(param_name))
+#                 parameters.append({'params': param, 'name': param_name})
+#                 param_names.append(param_name)
+#
+#     for param_name, param in model.named_parameters():
+#         if param_name not in param_names:
+#             # This sames a lot of GPU memory...
+#             param.requires_grad = False
+#
+#     return parameters

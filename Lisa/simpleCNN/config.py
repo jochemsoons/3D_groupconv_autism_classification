@@ -9,6 +9,8 @@ def parse_opts():
 
     parser.add_argument('--model_store_path', type=str, required=True, help='location path of model checkpoints')
 
+    parser.add_argument('--optim_store_path', type=str, required=False, help='location path of model checkpoints')
+
     parser.add_argument('--test_ratio', type=float, default=0.3, help='ratio that defines size of test set')
 
     parser.add_argument('--train_val_ratio', type=float, default=0.7, help='ratio of train/val set sizes')
@@ -21,6 +23,8 @@ def parse_opts():
 
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
+
+    parser.add_argument('--lr_d', type=bool, default=False, help='Whether to decrase the learning rate after 56% accuracy')
 
     parser.add_argument('--no_cuda', action='store_true', default=False,
                         help='disables CUDA training')
@@ -52,7 +56,7 @@ def print_config(args):
     print("model storage path: \t {}".format(args.model_store_path))
     print("train/val ratio: \t {}".format(args.train_val_ratio))
     print("test ratio: \t \t {}".format(args.test_ratio))
-    print("model:\t \t {}".format(args.model))
+    print("model:\t \t \t {}".format(args.model))
     if args.model == "resnet":
         print("shortcut type: \t \t {}".format(args.resnet_shortcut))
     print("summary to train on: \t {}".format(args.summary))
