@@ -10,20 +10,20 @@ class Conv3DNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.BatchNorm3d(32))
         self.layer2 = nn.Sequential(
-            nn.Conv3d(32, 64, kernel_size=[3, 5, 3]),
+            nn.Conv3d(32, 32, kernel_size=[3, 5, 3]),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm3d(32))
+        self.layer3 = nn.Sequential(
+            nn.Conv3d(32, 64, kernel_size=[3, 3, 3]),
             nn.ReLU(inplace=True),
             nn.BatchNorm3d(64))
-        self.layer3 = nn.Sequential(
-            nn.Conv3d(64, 128, kernel_size=[3, 3, 3]),
-            nn.ReLU(inplace=True),
-            nn.BatchNorm3d(128))
         self.layer4 = nn.Sequential(
-            nn.Conv3d(128, 64, kernel_size=[3, 3, 3]),
+            nn.Conv3d(64, 64, kernel_size=[2, 2, 2]),
             nn.ReLU(inplace=True),
             nn.BatchNorm3d(64))
         self.drop_out = nn.Dropout(inplace=True)
-        self.fc1 = nn.Linear(1728, 256)
-        self.fc2 = nn.Linear(256, num_classes)
+        self.fc1 = nn.Linear(4096, 512)
+        self.fc2 = nn.Linear(512, num_classes)
 
     def forward(self, x):
         out = self.maxpool(x)

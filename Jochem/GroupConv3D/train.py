@@ -2,12 +2,12 @@ import numpy as np
 import h5py
 import torch
 import torch.nn as nn
+import sklearn.metrics
 
-from explore_data import explore_data
-from create_hdf5 import write_subset_files
-from AbideData import AbideDataset
+from AbideData import AbideDataset, write_subset_files, explore_data
 from Conv3DNet import Conv3DNet
 from config import parse_opts, print_config
+from plot import plot_accuracy, plot_loss, plot_roc_auc
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -31,7 +31,7 @@ num_classes = args.num_classes
 batch_size = args.batch_size
 learning_rate = args.lr
 
-# Paths of data and model storage
+# Paths of data, model and plot storage
 DATA_PATH = args.data_path
 MODEL_STORE_PATH = args.model_store_path
 PLOT_STORE_PATH = args.plot_store_path
@@ -40,7 +40,7 @@ print("Splitting dataset into subsets...")
 data_file = h5py.File(DATA_PATH  + 'fmri_summary_abideI_II.hdf5', 'r')
 write_subset_files(data_file, DATA_PATH, args.summary, args.test_ratio, args.train_val_ratio)
 
-# Create train and validation set
+# Create train, validation and test set
 print("Loading data subsets...\n")
 train_set = AbideDataset(DATA_PATH, "train", args.summary)
 val_set = AbideDataset(DATA_PATH, "validation", args.summary)
@@ -50,27 +50,29 @@ print("#" * 60)
 # Initialize dataloaders
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
 val_loader =  torch.utils.data.DataLoader(val_set, batch_size=batch_size, shuffle=False)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
+# Check if cuda GPU is available
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
-
 device = torch.device("cuda" if use_cuda else "cpu")
 if torch.cuda.is_available() and use_cuda: GPU = True
 else: GPU = False
-
 print("Using {} device...".format(device))
 
 # Initialize model
 print("Initializing model...")
 if args.model == "conv3d":
     model = Conv3DNet(num_classes)
+# elif args.model = "groupconv3d":
+#     model = GroupConv3D(num_classes)
+
 if GPU:
     model = model.cuda()
 print("Model initialized.")
 print("#" * 60)
 
 def validation_acc(model, val_loader, GPU, criterion, batch_size):
-# Test the model
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -112,6 +114,7 @@ for epoch in range(num_epochs):
     total = len(train_loader.dataset)
     total_correct = 0
     total_loss = 0
+
     for images, labels in train_loader:
         if GPU:
             images = images.to(device)
@@ -129,7 +132,6 @@ for epoch in range(num_epochs):
 
         # Track the accuracy
         _, predicted = torch.max(outputs.data, 1)
-        # print(predicted, labels)
         correct = (predicted == labels).sum().item()
         total_correct += correct
 
@@ -150,40 +152,61 @@ for epoch in range(num_epochs):
     # Save model if this is specified
     if args.save_model and best_val_acc <= val_acc:
         best_val_acc = val_acc
-        torch.save(model.state_dict(), MODEL_STORE_PATH + '{}_model_epoch{}_valloss{:.4f}_valacc{:.2f}.pt'.format(args.model, epoch+1, val_loss, val_acc))
+        OPTIMAL_PATH = MODEL_STORE_PATH + '{}_model_epoch{}_valloss{:.4f}_valacc{:.2f}.pt'.format(args.model, epoch+1, val_loss, val_acc)
+        torch.save(model.state_dict(), OPTIMAL_PATH)
+
 
 # Summarize the training session
-print("Done average val. acc: {:.2f}, best val. acc: {:.2f} ".format(sum(val_acc_list)/num_epochs, max(val_acc_list)))
+print("Done with training: average val. acc: {:.2f}, best val. acc: {:.2f} (epoch: {}), average val. loss: {:.4f}, lowest val. loss: {:.4f} (epoch: {})".format(sum(val_acc_list)/num_epochs, max(val_acc_list), val_acc_list.index(max(val_acc_list)), sum(val_loss_list)/num_epochs, min(val_loss_list), val_loss_list.index(min(val_loss_list))))
 
-# Find train and validation accuray max
-t_acc_max = max(train_acc_list)
-t_xpos = train_acc_list.index(t_acc_max)
-t_epoch_max = range(num_epochs)[t_xpos]
-v_acc_max = max(val_acc_list)
-v_xpos = val_acc_list.index(v_acc_max)
-v_epoch_max = range(num_epochs)[v_xpos]
+# Create accuracy and loss plot figures
+plot_accuracy(args, num_epochs, train_acc_list, val_acc_list, PLOT_STORE_PATH)
+plot_loss(args, num_epochs, train_loss_list, val_loss_list, val_acc_list, PLOT_STORE_PATH)
 
-# Plot the accuracy figure
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_title("Training vs validation accuracy for {}".format(args.model))
-ax.plot(range(num_epochs), train_acc_list, 'r', label='Train')
-ax.plot(t_epoch_max, t_acc_max, color='r', marker=11, label='Train accuray max', markersize=10)
-ax.plot(range(num_epochs), val_acc_list, 'b', label='Validation')
-ax.plot(v_epoch_max, v_acc_max, color='b', marker=11, label='Validation accuray max', markersize=10)
-ax.set_xlabel('Epochs')
-ax.set_ylabel('Percentage correct')
-ax.legend(loc='best')
-fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), args.lr))
+print("#" * 60)
+print("Starting testing phase...")
 
+# Load model, Conv3D or GroupConv3D
+assert args.model in ['conv3d', 'groupconv3d']
+if args.model == 'conv3d':
+    model = Conv3DNet(num_classes)
+    model.load_state_dict(torch.load(OPTIMAL_PATH))
 
-# Plot the loss figure
-fig2 = plt.figure()
-ax2 = fig2.add_subplot(111)
-ax2.plot(range(num_epochs), train_loss_list, 'r', label='Train')
-ax2.plot(range(num_epochs), val_loss_list, 'b', label='Validation')
-ax2.set_title("Training loss vs validation loss for the {} model".format(args.model))
-ax2.set_xlabel('Epochs')
-ax2.set_ylabel('CE loss')
-ax2.legend(loc='best')
-fig2.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), args.lr))
+# elif args.model = 'groupconv3d':
+    # model = GroupConv3DNet(num_classes)
+    # model.load_state_dict(torch.load(OPTIMAL_PATH))
+
+if use_cuda:
+    model = model.cuda()
+
+print("Optimal model from training is restored")
+print("Testing on {} test images\n".format(len(test_loader.dataset)))
+# Run the test samples through the model in the specified batch size
+with torch.no_grad():
+    model.eval()
+    correct = 0
+    total = 0
+    total_loss = 0
+    labels_list = np.array([])
+    predicted_list = np.array([])
+    for images, labels in test_loader:
+        labels_list = np.append(labels_list, labels.numpy())
+        if use_cuda:
+            images = images.to(device)
+            labels = labels.to(device)
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        total_loss += loss.item()
+        _, predicted = torch.max(outputs.data, 1)
+        predicted_list = np.append(predicted_list, predicted.cpu().numpy())
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+    # Values for ROC CURVE, accuracy and loss
+    fpr, tpr, threshold = sklearn.metrics.roc_curve(labels_list, predicted_list)
+    test_acc = (correct / total) * 100
+    test_loss = total_loss/(total/batch_size)
+
+# Plot and finish test phase
+plot_roc_auc(args, test_acc, fpr, tpr, PLOT_STORE_PATH)
+print("Done with testing: Accuracy: {:.2f}%, Loss: {:.4f}\n".format(test_acc, test_loss))
