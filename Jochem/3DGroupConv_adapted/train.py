@@ -153,13 +153,13 @@ def train(args):
             print('Training epoch {}/{}'.format(_,MAX_STEPS//EVAL_EVERY_N_STEPS))
             nn.train(
                 input_fn=train_input_fn,
-                hooks=[train_qinit_hook, step_cnt_hook],
+                hooks=None,
                 steps=EVAL_EVERY_N_STEPS)
 
             if args.run_validation:
                 results_val = nn.evaluate(
                     input_fn=val_input_fn,
-                    hooks=[val_qinit_hook, val_summary_hook],
+                    hooks=None,
                     steps=EVAL_STEPS)
                 print('val loss = {:.5f}; val acc = {:.5}'.format(
                     results_val['loss'],results_val['accuracy']))

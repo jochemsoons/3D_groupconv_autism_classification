@@ -101,12 +101,11 @@ def create_input_fn(file, summary, batch_size, num_epochs):
     labels = file['labels']
 
     input_fn = tf.estimator.inputs.numpy_input_fn(
-        x=feature,
+        x=np.asarray(feature),
         y=labels,
         batch_size=batch_size,
         num_epochs=num_epochs,
         shuffle=True,
         queue_capacity=5000,
         num_threads=1)
-
     return input_fn
