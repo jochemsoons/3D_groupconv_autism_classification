@@ -10,10 +10,17 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 import sys
-sys.path.append('/data/agelgazzar/Work/AgePrediction/3DResnet/dltk')
+import h5py
+
+# sys.path.append('/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_')
+sys.path.insert(0, "/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/code")
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+# sys.path.append('/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_')
+# print(sys.path)
 from dltk.io.abstract_reader import Reader
 from dltk.networks.regression_classification.group_convnet import groupnet_3d,convnet_3d
 from reader import read_fn
+from AbidaData import create_input_fn, write_subset_files
 
 
 
@@ -111,40 +118,17 @@ def train(args):
     tf.set_random_seed(42)
 
     print('Setting up...')
+    if args.resplit_data:
+        data_file = h5py.File(DATA_PATH  + 'fmri_summary_abideI_II.hdf5', 'r')
+        write_subset_files(data_file, DATA_PATH, args.summary, args.test_ratio, args.train_val_ratio)
 
-    # Parse csv files for file names
-
-    train_df = pd.read_csv(args.train_csv)
-    val_df = pd.read_csv(args.val_csv)
-
-    # Set up a data reader to handle the file i/o.
-    reader_params = {'n_examples': 2,
-                     'example_size': [45, 54, 45],
-                     'extract_examples': False}
-
-    reader_example_shapes = {'features': {'x': reader_params['example_size'] + [NUM_CHANNELS]},
-                             'labels': {'y': [1]}}
-    reader = Reader(read_fn,
-                    {'features': {'x': tf.float32},
-                     'labels': {'y': tf.int32}})
+    train_f = h5py.File(args.train_file, 'r')
+    val_f = h5py.File(args.val_file, 'r')
 
     # Get input functions and queue initialisation hooks for training and
     # validation data
-    train_input_fn, train_qinit_hook = reader.get_inputs(
-        file_references=train_df,
-        mode=tf.estimator.ModeKeys.TRAIN,
-        example_shapes=reader_example_shapes,
-        batch_size=BATCH_SIZE,
-        shuffle_cache_size=SHUFFLE_CACHE_SIZE,
-        params=reader_params)
-
-    val_input_fn, val_qinit_hook = reader.get_inputs(
-        file_references=val_df,
-        mode=tf.estimator.ModeKeys.EVAL,
-        example_shapes=reader_example_shapes,
-        batch_size=BATCH_SIZE,
-        shuffle_cache_size=SHUFFLE_CACHE_SIZE,
-        params=reader_params)
+    train_input_fn = create_input_fn(train_f, args.summary, BATCH_SIZE, nepochs)
+    val_input_fn = create_input_fn(val_f, args.summary, BATCH_SIZE, nepochs)
 
     # Instantiate the neural network estimator
     nn = tf.estimator.Estimator(
@@ -203,14 +187,18 @@ def train(args):
 
 if __name__ == '__main__':
     # Set up argument parser
-    parser = argparse.ArgumentParser(description='PAC Age regression training script')
+    parser = argparse.ArgumentParser(description='ASD classification training script')
     parser.add_argument('--run_validation', default=True)
     parser.add_argument('--restart', default=True, action='store_true')
     parser.add_argument('--verbose', default=False, action='store_true')
+    parser.add_argument('--resplit_data', default=False, action='store_true')
     parser.add_argument('--cuda_devices', '-c', default='0')
+    parser.add_argument('--summary', type=str, required=True, default='T1')
     parser.add_argument('--model_path', '-p', default='../models/Abide_summaries')
-    parser.add_argument('--train_csv', default='csvfiles/summary_csv/train_ABIDE_Summaries.csv')
-    parser.add_argument('--val_csv', default= 'csvfiles/summary_csv/validate_ABIDE_Summaries.csv')
+    parser.add_argument('--data_path', default='/home/jsoons/afstudeerproject_KI/Jochem/Datasets/')
+    parser.add_argument('--batch_size', default=8)
+    parser.add_argument('--train_file', default='/home/jsoons/afstudeerproject_KI/Jochem/Datasets/train.hdf5')
+    parser.add_argument('--val_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/validation.hdf5')
     args = parser.parse_args()
 
     # Set verbosity
