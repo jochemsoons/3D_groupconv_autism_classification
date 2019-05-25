@@ -5,6 +5,7 @@ from __future__ import print_function
 import argparse
 import os
 import time
+import h5py
 
 import numpy as np
 import pandas as pd
@@ -14,18 +15,16 @@ from tensorflow.contrib import predictor
 
 from dltk.io.augmentation import extract_random_example_array
 import matplotlib.pyplot as plt
-
+import sklearn.metrics
 from sklearn.metrics import r2_score
-READER_PARAMS = {'extract_examples': False}
-N_VALIDATION_SUBJECTS = int(0.2 * 2122)
 from sklearn.metrics import confusion_matrix
-
+from plot import plot_roc_auc
 
 def predict(args):
-
-
-    test_df = pd.read_csv(args.test_csv)
-
+    test_model = '1558786491'
+    test_f = h5py.File(args.test_file, 'r')
+    images = test_f[args.summary]
+    labels_ = test_f['labels']
 
     # From the model_path, parse the latest saved model and restore a
     # predictor from it
@@ -37,55 +36,40 @@ def predict(args):
     print('Loading from {}'.format(export_dir))
     my_predictor = predictor.from_saved_model(export_dir)
 
-    # Iterate through the files, predict on the full volumes and compute a Dice
-    # coefficient
+    # Iterate through data and labels and fetch results.
     accuracy = []
     labels = np.empty([], dtype=int)
-    pred = np.empty([], dtype=int)
-    for output in read_fn(test_df,
-                          mode=tf.estimator.ModeKeys.EVAL,
-                          params=READER_PARAMS):
+    predictions = np.empty([], dtype=int)
+
+    for img, lbl in zip(images, labels_):
         t0 = time.time()
 
-        # Parse the read function output and add a dummy batch dimension as
-        # required
-        img = output['features']['x']
-        lbl = output['labels']['y']
-        test_id = output['img_id']
-
-        # We know, that the training input shape of [64, 96, 96] will work with
-        # our model strides, so we collect several crops of the test image and
-        # average the predictions. Alternatively, we could pad or crop the input
-        # to any shape that is compatible with the resolution scales of the
-        # model:
         img = np.expand_dims(img,0)
-        '''num_crop_predictions = 4
-        crop_batch = extract_random_example_array(
-            image_list=img,
-            example_size=[64, 96, 96],
-            n_examples=num_crop_predictions)'''
 
         y_ = my_predictor.session.run(
             fetches=my_predictor._fetch_tensors['y_prob'],
             feed_dict={my_predictor._feed_tensors['x']: img})
 
-        # Average the predictions on the cropped test inputs:
+        # Average the predictions on the test inputs:
         y_ = np.mean(y_, axis=0)
         predicted_class = np.argmax(y_)
-        labels = np.append(labels,lbl)
-        pred = np.append(pred,predicted_class)
+        labels = np.append(labels, lbl)
+        predictions = np.append(predictions, predicted_class)
 
         # Calculate the accuracy for this subject
         accuracy.append(predicted_class == lbl)
 
         # Print outputs
-        print('id={}; pred={}; true={}; run time={:0.2f} s; '
-              ''.format(test_id, predicted_class, lbl[0], time.time() - t0))
-    print('accuracy={}'.format(np.mean(accuracy)))
-    cm1 = confusion_matrix(labels[1:] , pred[1:])
+        # print('prob={}, pred={}; true={}; run time={:0.2f} s; '
+        #         ''.format(y_, predicted_class, lbl, time.time() - t0))
 
+    fpr, tpr, threshold = sklearn.metrics.roc_curve(np.array(labels[1:]), np.array(predictions[1:]))
+    cm1 = confusion_matrix(labels[1:] , predictions[1:])
+    print('accuracy={}'.format(np.mean(accuracy)))
     print('sens:', cm1[0,0]/(cm1[0,0]+cm1[0,1]))
     print('spec:', cm1[1,1]/(cm1[1,0]+cm1[1,1]) )
+    print("Plotting roc/auc curve...")
+    plot_roc_auc(args, np.mean(accuracy), fpr, tpr)
 
 
 if __name__ == '__main__':
@@ -94,9 +78,9 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', default=False, action='store_true')
     parser.add_argument('--cuda_devices', '-c', default='0')
     parser.add_argument('--model_path', '-p', default='../models/')
-    parser.add_argument('--test_csv', default='/data/agelgazzar/Work/AgePrediction/3DResnet/code/csvfiles/PAC_test.csv')
     parser.add_argument('--model', type=str, required=True)
     parser.add_argument('--summary', type=str, required=True)
+    parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--plot_store_path', type=str, default='/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/plots/')
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--test_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/test.hdf5')

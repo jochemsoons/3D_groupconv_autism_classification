@@ -78,7 +78,7 @@ def plot_loss_val(args, num_epochs, val_loss_list, val_acc_list, PLOT_STORE_PATH
 
 
 # Plot the ROC/AUC Curve
-def plot_roc_auc(args, test_acc, fpr, tpr, PLOT_STORE_PATH):
+def plot_roc_auc(args, test_acc, fpr, tpr):
     roc_auc = sklearn.metrics.auc(fpr, tpr)
     fig3 = plt.figure()
     ax3 = fig3.add_subplot(111)
@@ -90,4 +90,4 @@ def plot_roc_auc(args, test_acc, fpr, tpr, PLOT_STORE_PATH):
     ax3.set_xlim([0,1])
     ax3.set_ylim([0,1])
     ax3.legend(loc="best")
-    fig3.savefig(PLOT_STORE_PATH + 'roc_auc_curve_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary, test_acc, args.lr))
+    fig3.savefig(args.plot_store_path + 'roc_auc_curve_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary, test_acc, args.lr))
