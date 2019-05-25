@@ -21,7 +21,7 @@ from sklearn.metrics import confusion_matrix
 from plot import plot_roc_auc
 
 def predict(args):
-    test_model = '1558786491'
+    test_model = '1558805223'
     test_f = h5py.File(args.test_file, 'r')
     images = test_f[args.summary]
     labels_ = test_f['labels']

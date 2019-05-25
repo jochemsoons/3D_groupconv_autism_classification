@@ -49,7 +49,6 @@ def model_fn_group3d(features, labels, mode, params):
     net_output_ops = groupnet_3d(
         features['x'],
         num_classes=NUM_CLASSES,
-        filters=(8, 8, 16, 16),
         mode=mode,
         kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4))
 

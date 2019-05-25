@@ -10,7 +10,7 @@ from dltk.groupy.gconv.tensorflow_gconv.splitgconv3d import gconv3d_unit, group_
 
 def groupnet_3d(inputs,
               num_classes,
-              filters=(16, 32, 64, 128),
+              filters=(8, 8, 16, 16),
               mode=tf.estimator.ModeKeys.EVAL,
               use_bias=False,
               activation=tf.nn.relu6,
@@ -62,21 +62,21 @@ def groupnet_3d(inputs,
                    'bias_regularizer': bias_regularizer}
     # print("INPUTS", inputs)
     x = inputs
-    x = tf.layers.max_pooling3d(x,2,strides=2)
+    x = tf.layers.max_pooling3d(x,2,strides=1)
 
     for i in range(len(filters)):
         x = gconv3d_unit(x, filters[i])
         x = activation(x)
-        # print(x)
-        # x = group_norm(x, G=24)
-        x = tf.layers.batch_normalization(x, training=mode == tf.estimator.ModeKeys.TRAIN)
-        # x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            x = group_norm(x, G=24)
+        # x = tf.layers.batch_normalization(x, training=mode == tf.estimator.ModeKeys.TRAIN)
+        x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
         if i == 0:
-            x = tf.layers.max_pooling3d(x,2,strides=2)
+            x = tf.layers.max_pooling3d(x,2,strides=1)
         # print('output shape after layer {} : {}'.format(i+1,x.get_shape()))
 
-    #x = tf.reshape(x,(batch_size,-1))
     x = tf.layers.Flatten()(x)
+    # print("output shape after flattening: {}".format(x.get_shape()))
     x = tf.layers.dense(inputs=x,
                         units=512,
                         activation=None,
@@ -184,6 +184,7 @@ def convnet_3d(inputs,
         x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
         if i == 0:
             x = tf.layers.max_pooling3d(x,2,strides=2)
+
 
     x = tf.layers.Flatten()(x)
     x = tf.layers.dense(inputs=x,

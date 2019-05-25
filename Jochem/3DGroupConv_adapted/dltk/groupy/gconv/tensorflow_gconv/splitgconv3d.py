@@ -151,14 +151,10 @@ def gres3d_unit(x,out_channels,s):
     return y
 
 def group_norm(x, G=24, eps=1e-5, scope='group_norm') :
-
     N, H, W, D, C = x.get_shape().as_list()
-    print("N:{}, H:{}, W:{}, D:{}, C:{}".format(N, H, W, D, C))
     G = min(G, C)
-    print("G: {}".format(G))
-    x = tf.reshape(x, tf.convert_to_tensor(np.array([N, H, W, D, G, C // G])))
+    x = tf.reshape(x, tf.convert_to_tensor([-1, H, W, D, G, C // G]))
     mean, var = tf.nn.moments(x, [1, 2,3,5], keep_dims=True)
     x = (x - mean) / tf.sqrt(var + eps)
-    x = tf.reshape(x, tf.convert_to_tensor([N, H, W, D,C]))
-
+    x = tf.reshape(x, tf.convert_to_tensor([-1, H, W, D, C]))
     return x
