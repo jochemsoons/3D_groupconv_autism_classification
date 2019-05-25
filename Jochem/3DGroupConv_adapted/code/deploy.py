@@ -15,10 +15,9 @@ from tensorflow.contrib import predictor
 from dltk.io.augmentation import extract_random_example_array
 import matplotlib.pyplot as plt
 
-from reader import read_fn
 from sklearn.metrics import r2_score
 READER_PARAMS = {'extract_examples': False}
-N_VALIDATION_SUBJECTS = int(0.2 * 2640)
+N_VALIDATION_SUBJECTS = int(0.2 * 2122)
 from sklearn.metrics import confusion_matrix
 
 
@@ -33,7 +32,8 @@ def predict(args):
     #export_dir = \
         #[os.path.join(args.model_path, o) for o in sorted(os.listdir(args.model_path))
          #if os.path.isdir(os.path.join(args.model_path, o)) and o.isdigit()][-1]
-    export_dir = os.path.join(args.model_path, 'best/1557349239/')
+    model_path = str(args.model_path + args.model + '/')
+    export_dir = os.path.join(model_path, 'best_loss/{}/'.format(test_model))
     print('Loading from {}'.format(export_dir))
     my_predictor = predictor.from_saved_model(export_dir)
 
@@ -93,9 +93,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PAC age prediction test script')
     parser.add_argument('--verbose', default=False, action='store_true')
     parser.add_argument('--cuda_devices', '-c', default='0')
-    parser.add_argument('--model_path', '-p', default='/data/agelgazzar/Work/AgePrediction/Two_obj_3DResnet/models/group_net_O/')
+    parser.add_argument('--model_path', '-p', default='../models/')
     parser.add_argument('--test_csv', default='/data/agelgazzar/Work/AgePrediction/3DResnet/code/csvfiles/PAC_test.csv')
-
+    parser.add_argument('--model', type=str, required=True)
+    parser.add_argument('--summary', type=str, required=True)
+    parser.add_argument('--plot_store_path', type=str, default='/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/plots/')
+    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--test_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/test.hdf5')
     args = parser.parse_args()
 
     # Set verbosity

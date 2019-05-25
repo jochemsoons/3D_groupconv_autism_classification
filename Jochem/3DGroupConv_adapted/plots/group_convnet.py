@@ -70,9 +70,9 @@ def groupnet_3d(inputs,
         # print(x)
         # x = group_norm(x, G=24)
         x = tf.layers.batch_normalization(x, training=mode == tf.estimator.ModeKeys.TRAIN)
-        # x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
+        x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
         if i == 0:
-            x = tf.layers.max_pooling3d(x,2,strides=2)
+            x = tf.layers.max_pooling3d(x,2,strides=1)
         # print('output shape after layer {} : {}'.format(i+1,x.get_shape()))
 
     #x = tf.reshape(x,(batch_size,-1))

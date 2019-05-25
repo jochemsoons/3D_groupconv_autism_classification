@@ -10,7 +10,7 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 import sys
-sys.path.append('/data/agelgazzar/Work/AgePrediction/3DResnet/dltk') 
+sys.path.append('/data/agelgazzar/Work/AgePrediction/3DResnet/dltk')
 from dltk.io.abstract_reader import Reader
 from dltk.networks.regression_classification.group_convnet import groupnet_3d,convnet_3d
 from reader import read_fn

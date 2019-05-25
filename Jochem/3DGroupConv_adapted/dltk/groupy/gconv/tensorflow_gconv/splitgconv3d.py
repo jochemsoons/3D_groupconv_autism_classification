@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import numpy as np
 from dltk.groupy.gconv.make_gconv_indices import make_o_z3_indices, make_o_ot_indices, make_c4h_z3_indices, \
     make_c4h_c4ht_indices, make_d4h_z3_indices, make_d4h_d4ht_indices, make_oh_z3_indices, make_oh_oht_indices, \
     flatten_indices_3d
@@ -150,11 +150,13 @@ def gres3d_unit(x,out_channels,s):
                 gconv_indices=gconv_indices, gconv_shape_info=gconv_shape_info)
     return y
 
-def group_norm(x, G=32, eps=1e-5, scope='group_norm') :
+def group_norm(x, G=24, eps=1e-5, scope='group_norm') :
 
     N, H, W, D, C = x.get_shape().as_list()
+    print("N:{}, H:{}, W:{}, D:{}, C:{}".format(N, H, W, D, C))
     G = min(G, C)
-    x = tf.reshape(x, tf.convert_to_tensor([N, H, W,D, G, C // G]))
+    print("G: {}".format(G))
+    x = tf.reshape(x, tf.convert_to_tensor(np.array([N, H, W, D, G, C // G])))
     mean, var = tf.nn.moments(x, [1, 2,3,5], keep_dims=True)
     x = (x - mean) / tf.sqrt(var + eps)
     x = tf.reshape(x, tf.convert_to_tensor([N, H, W, D,C]))

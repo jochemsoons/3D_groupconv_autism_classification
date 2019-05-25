@@ -60,52 +60,53 @@ import tensorflow as tf
 #     def num_classes(self):
 #         return len(self._classes)
 
-def write_subset_files(file, data_path, summary, test_ratio, train_val_ratio):
+def write_subset_files(file, data_path, test_ratio, train_val_ratio):
     train_f = h5py.File(data_path +'train.hdf5', 'w')
     val_f = h5py.File(data_path + 'validation.hdf5', 'w')
     test_f = h5py.File(data_path +'test.hdf5', 'w')
 
     summaries = file['summaries']
     attrs = summaries.attrs
-    labels = attrs['DX_GROUP']
-    dataset = summaries[summary]
-    joined_set = list(zip(dataset, labels))
-    random.shuffle(joined_set)
+    labels = np.array(attrs['DX_GROUP'])
 
-    dataset, labels = zip(*joined_set)
-    test_index = round(test_ratio * len(dataset))
-    train_index = test_index + round(train_val_ratio * (len(dataset) -
-    test_index))
+    length = len(labels)
+    p = np.random.permutation(length)
+    labels = labels[p]
 
-    test_data = dataset[0:test_index]
+    test_index = round(test_ratio * length)
+    train_index = test_index + round(train_val_ratio * (length -test_index))
+
     test_labels = labels[0:test_index]
-
-    train_data = dataset[test_index:train_index]
     train_labels = labels[test_index:train_index]
-
-    val_data = dataset[train_index:]
     val_labels = labels[train_index:]
-
-    train_f.create_dataset(summary, data=train_data)
     train_f.create_dataset('labels', data=train_labels)
-    val_f.create_dataset(summary, data=val_data)
     val_f.create_dataset('labels', data=val_labels)
-    test_f.create_dataset(summary, data=test_data)
     test_f.create_dataset('labels', data=test_labels)
+
+    for summary in summaries:
+        dataset = np.array(summaries[summary])
+        dataset = dataset[p]
+
+        test_data = dataset[0:test_index]
+        train_data = dataset[test_index:train_index]
+        val_data = dataset[train_index:]
+
+        train_f.create_dataset(summary, data=train_data)
+        val_f.create_dataset(summary, data=val_data)
+        test_f.create_dataset(summary, data=test_data)
 
     train_f.close(), val_f.close(), test_f.close()
 
-def create_input_fn(file, summary, batch_size, num_epochs):
-    print(file.keys())
+def create_input_fn(file, summary, batch_size, num_epochs, shuffle=True):
     feature = file[summary]
     labels = file['labels']
 
     input_fn = tf.estimator.inputs.numpy_input_fn(
-        x=np.asarray(feature),
-        y=labels,
+        x={'x': np.asarray(feature)},
+        y={'y': np.asarray(labels)},
         batch_size=batch_size,
         num_epochs=num_epochs,
-        shuffle=True,
+        shuffle=shuffle,
         queue_capacity=5000,
         num_threads=1)
     return input_fn
