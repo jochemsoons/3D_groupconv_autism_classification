@@ -20,6 +20,7 @@ from AbidaData import create_input_fn, write_subset_files
 from config import parse_opts, print_config
 from plot import *
 
+BATCH_SIZE = 64
 NUM_CLASSES = 2
 NUM_CHANNELS = 1
 SHUFFLE_CACHE_SIZE = 32
@@ -48,6 +49,7 @@ def model_fn_group3d(features, labels, mode, params):
     # 1. create a model and its outputs
     net_output_ops = groupnet_3d(
         features['x'],
+        batch_size=BATCH_SIZE,
         num_classes=NUM_CLASSES,
         mode=mode,
         kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4))
@@ -119,6 +121,8 @@ def model_fn_conv3d(features, labels, mode, params):
     Returns:
         tf.estimator.EstimatorSpec: A custom EstimatorSpec for this experiment
     """
+    print(features)
+    print(features['x'])
     # 1. create a model and its outputs
     net_output_ops = convnet_3d(
         features['x'],
@@ -126,7 +130,7 @@ def model_fn_conv3d(features, labels, mode, params):
         filters=(32, 32, 64, 64),
         mode=mode,
         kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-
+    print("Output", net_output_ops)
     # 1.1 Generate predictions only (for `ModeKeys.PREDICT`)
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(
@@ -136,7 +140,7 @@ def model_fn_conv3d(features, labels, mode, params):
 
     # 2. set up a loss function
     one_hot_labels = tf.reshape(tf.one_hot(labels['y'], depth=NUM_CLASSES), [-1, NUM_CLASSES])
-
+    print("Labels:", one_hot_labels)
     loss = tf.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
         logits=net_output_ops['logits'])
