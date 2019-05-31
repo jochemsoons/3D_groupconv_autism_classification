@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from tensorflow.python.client import device_lib
 import time
 import datetime
 import argparse
@@ -12,15 +13,17 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 import sys
+# sys.path.insert(0, "/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/afstudeerproject_KI/Jochem/3DGroupConv_adapted/")
 sys.path.insert(0, "/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/")
 import h5py
 from abstract_reader import Reader
 from dltk.networks.regression_classification.group_convnet import groupnet_3d,convnet_3d
-from AbidaData import create_input_fn, write_subset_files
-from config import parse_opts, print_config
+from AbidaData import create_input_fn, write_subset_files, explore_data
+from config import print_config
 from plot import *
+from deploy import predict_after_train
 
-BATCH_SIZE = 64
+BATCH_SIZE = 8
 NUM_CLASSES = 2
 NUM_CHANNELS = 1
 SHUFFLE_CACHE_SIZE = 32
@@ -45,6 +48,7 @@ def model_fn_group3d(features, labels, mode, params):
     Returns:
         tf.estimator.EstimatorSpec: A custom EstimatorSpec for this experiment
     """
+
     # print("CREATE MODEL")
     # 1. create a model and its outputs
     net_output_ops = groupnet_3d(
@@ -80,14 +84,6 @@ def model_fn_group3d(features, labels, mode, params):
     with tf.control_dependencies(update_ops):
         train_op = optimiser.minimize(loss, global_step=global_step)
 
-    # 4.1 (optional) create custom image summaries for tensorboard
-    my_image_summaries = {}
-    my_image_summaries['feat_t1'] = features['x'][0, 32, :, :, 0]
-
-    expected_output_size = [1, 54, 45, 1]  # [B, W, H, C]
-    [tf.summary.image(name, tf.reshape(image, expected_output_size))
-     for name, image in my_image_summaries.items()]
-
     # 4.2 (optional) track the rmse (scaled back by 100, see reader.py)
     acc = tf.metrics.accuracy
     prec = tf.metrics.precision
@@ -121,16 +117,13 @@ def model_fn_conv3d(features, labels, mode, params):
     Returns:
         tf.estimator.EstimatorSpec: A custom EstimatorSpec for this experiment
     """
-    print(features)
-    print(features['x'])
     # 1. create a model and its outputs
     net_output_ops = convnet_3d(
         features['x'],
         num_classes=NUM_CLASSES,
-        filters=(32, 32, 64, 64),
         mode=mode,
         kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-4))
-    print("Output", net_output_ops)
+    # print("Output", net_output_ops)
     # 1.1 Generate predictions only (for `ModeKeys.PREDICT`)
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(
@@ -140,7 +133,7 @@ def model_fn_conv3d(features, labels, mode, params):
 
     # 2. set up a loss function
     one_hot_labels = tf.reshape(tf.one_hot(labels['y'], depth=NUM_CLASSES), [-1, NUM_CLASSES])
-    print("Labels:", one_hot_labels)
+    # print("Labels:", one_hot_labels)
     loss = tf.losses.softmax_cross_entropy(
         onehot_labels=one_hot_labels,
         logits=net_output_ops['logits'])
@@ -156,14 +149,6 @@ def model_fn_conv3d(features, labels, mode, params):
     with tf.control_dependencies(update_ops):
         train_op = optimiser.minimize(loss, global_step=global_step)
 
-    # 4.1 (optional) create custom image summaries for tensorboard
-    my_image_summaries = {}
-    my_image_summaries['feat_t1'] = features['x'][0, 32, :, :, 0]
-
-    expected_output_size = [1, 54, 45, 1]  # [B, W, H, C]
-    [tf.summary.image(name, tf.reshape(image, expected_output_size))
-     for name, image in my_image_summaries.items()]
-
     # 4.2 (optional) track the rmse (scaled back by 100, see reader.py)
     acc = tf.metrics.accuracy
     prec = tf.metrics.precision
@@ -178,7 +163,7 @@ def model_fn_conv3d(features, labels, mode, params):
                                       eval_metric_ops=eval_metric_ops)
 
 def train(args):
-    np.random.seed(42)
+    # np.random.seed(42)
     tf.set_random_seed(42)
 
     print('Setting up...')
@@ -187,6 +172,11 @@ def train(args):
         data_file = h5py.File(args.data_path  + 'fmri_summary_abideI_II.hdf5', 'r')
         write_subset_files(data_file, args.data_path, args.test_ratio, args.train_val_ratio)
         print("Data resplitted.")
+        print("#" * 80)
+
+    if args.explore_data:
+        data_file = h5py.File(args.data_path  + 'fmri_summary_abideI_II.hdf5', 'r')
+        explore_data(data_file)
         print("#" * 80)
 
     train_f = h5py.File(args.train_file, 'r')
@@ -228,7 +218,7 @@ def train(args):
             config=tf.estimator.RunConfig())
 
     start = time. time()
-    print('Starting training... ({})'.format(datetime.datetime.now()))
+    print('\nStarting training... ({})'.format(datetime.datetime.now()))
     print('Training on {} samples, validating on {} samples\n'.format(training_size, validation_size))
     best_model_path_loss = os.path.join(model_path, 'best_loss')
     best_model_path_acc = os.path.join(model_path, 'best_acc')
@@ -239,6 +229,10 @@ def train(args):
     precision_list = []
     train_loss_list = []
     train_acc_list = []
+    best_loss_dirs = []
+    best_acc_dirs = []
+    best_loss_epoch = None
+    best_acc_epoch = None
 
     try:
         for epoch in range(MAX_STEPS // EVAL_EVERY_N_STEPS):
@@ -283,6 +277,8 @@ def train(args):
                              'labels': {'y': [1]}}))
                     print('Best Loss Model saved to {}.'.format(export_dir))
                     best_val_loss = results_val['loss']
+                    best_loss_epoch = epoch + 1
+                    best_loss_dirs.append(export_dir)
 
                 if best_val_acc is None or results_val['accuracy'] > best_val_acc:
                     # os.system('rm -rf {}/{}'.format(best_model_path_acc,'*'))
@@ -293,6 +289,9 @@ def train(args):
                              'labels': {'y': [1]}}))
                     print('Best Acc. Model saved to {}.'.format(export_dir))
                     best_val_acc = results_val['accuracy']
+                    best_acc_epoch = epoch + 1
+                    best_acc_dirs.append(export_dir)
+
             print()
     except KeyboardInterrupt:
         nepochs = epoch
@@ -309,18 +308,33 @@ def train(args):
         plot_accuracy_val(args, nepochs, val_acc_list, args.plot_store_path)
         plot_loss_val(args, nepochs, val_loss_list, val_acc_list, args.plot_store_path)
     end = time. time()
-    print("Done ({})".format(datetime.datetime.now()))
+    print("Done.({})".format(datetime.datetime.now()))
     end = time. time()
     minutes = (end-start)
     print("Training time: {:.0f} minutes, {:.0f} seconds".format((end-start) // 60, (end-start) % 60))
     print("#" * 80)
-
+    print("Starting testing phase...")
+    print("Testing best loss model (loss = {:.4f} at epoch {})".format(best_val_loss, best_loss_epoch))
+    if len(best_loss_dirs) > 1:
+        predict_after_train(args, best_loss_dirs[-1])
+        # predict_after_train(args, best_loss_dirs[-2])
+    else:
+        predict_after_train(args, best_loss_dirs[-1])
+    print("\n")
+    print("Testing best acc model (acc = {:.4f} at epoch {})".format(best_val_acc, best_acc_epoch))
+    if len(best_acc_dirs) > 1:
+        predict_after_train(args, best_acc_dirs[-1])
+        # predict_after_train(args, best_acc_dirs[-2])
+    else:
+        predict_after_train(args, best_acc_dirs[-1])
+    print("Done testing. Exiting program.")
 
 if __name__ == '__main__':
     # Set up argument parser
     parser = argparse.ArgumentParser(description='ASD classification training script')
     parser.add_argument('--run_validation', default=True)
     parser.add_argument('--run_train_validation', default=False, action='store_true')
+    parser.add_argument('--explore_data', default=False, action='store_true')
     parser.add_argument('--restart', default=True, action='store_true')
     parser.add_argument('--verbose', default=False, action='store_true')
     parser.add_argument('--resplit_data', default=False, action='store_true')
@@ -333,8 +347,11 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--train_file', default='/home/jsoons/afstudeerproject_KI/Jochem/Datasets/train.hdf5')
+    # parser.add_argument('--train_file', default='/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/train.hdf5')
     parser.add_argument('--val_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/validation.hdf5')
+    # parser.add_argument('--val_file', default= '/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/validation.hdf5')
     parser.add_argument('--test_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/test.hdf5')
+    # parser.add_argument('--test_file', default= '/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5')
     parser.add_argument('--test_ratio', type=float, default=0.2, help='ratio that defines size of test set')
     parser.add_argument('--train_val_ratio', type=float, default=0.8, help='ratio of train/val set sizes')
     parser.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
@@ -362,6 +379,5 @@ if __name__ == '__main__':
         os.system('mkdir -p {}/{}'.format(args.model_path, args.model))
     else:
         print('Resuming training on model_path {}'.format(args.model_path))
-
     # Call training
     train(args)

@@ -1,29 +1,4 @@
-import argparse
 
-# def parse_opts():
-#     parser = argparse.ArgumentParser(description='ASD classification training script')
-#     parser.add_argument('--run_validation', default=True)
-#     parser.add_argument('--run_training_validation', default=True)
-#     parser.add_argument('--restart', default=True, action='store_true')
-#     parser.add_argument('--verbose', default=False, action='store_true')
-#     parser.add_argument('--resplit_data', default=False, action='store_true')
-#     parser.add_argument('--cuda_devices', '-c', default='0')
-#     parser.add_argument('--model', type=str, required=True)
-#     parser.add_argument('--summary', type=str, required=True)
-#     parser.add_argument('--model_path', '-p', default='../models/Abide_summaries')
-#     parser.add_argument('--data_path', default='/home/jsoons/afstudeerproject_KI/Jochem/Datasets/')
-#     parser.add_argument('--plot_store_path', type=str, default='/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/plots/')
-#     parser.add_argument('--batch_size', type=int, default=64)
-#     parser.add_argument('--lr', type=float, default=0.0001)
-#     parser.add_argument('--train_file', default='/home/jsoons/afstudeerproject_KI/Jochem/Datasets/train.hdf5')
-#     parser.add_argument('--val_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/validation.hdf5')
-#     parser.add_argument('--test_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/test.hdf5')
-#     parser.add_argument('--test_ratio', type=float, default=0.2, help='ratio that defines size of test set')
-#     parser.add_argument('--train_val_ratio', type=float, default=0.8, help='ratio of train/val set sizes')
-#     parser.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
-#     parser.add_argument('--num_classes', type=int, default=2)
-#     args = parser.parse_args()
-#     return args
 
 def print_config(args):
     print("PARAMETERS:\n")

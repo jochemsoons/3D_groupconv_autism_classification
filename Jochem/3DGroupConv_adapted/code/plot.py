@@ -23,7 +23,7 @@ def plot_accuracy_train_val(args, num_epochs, train_acc_list, val_acc_list,
     ax.set_xlabel('Epochs')
     ax.set_ylabel('Percentage correct')
     ax.legend(loc='best')
-    fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
+    fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.4f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
 
 def plot_accuracy_val(args, num_epochs, val_acc_list, PLOT_STORE_PATH):
 
@@ -38,7 +38,7 @@ def plot_accuracy_val(args, num_epochs, val_acc_list, PLOT_STORE_PATH):
     ax.set_xlabel('Epochs')
     ax.set_ylabel('Percentage correct')
     ax.legend(loc='best')
-    fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
+    fig.savefig(PLOT_STORE_PATH + 'accuracy_{}_{}_{:.4f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
 
 
 # Plot the loss figure
@@ -60,7 +60,7 @@ def plot_loss_train_val(args, num_epochs, train_loss_list, val_loss_list, val_ac
     ax.set_xlabel('Epochs')
     ax.set_ylabel('CE Loss')
     ax.legend(loc='best')
-    fig.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
+    fig.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.4f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
 
 def plot_loss_val(args, num_epochs, val_loss_list, val_acc_list, PLOT_STORE_PATH):
     fig = plt.figure()
@@ -74,7 +74,7 @@ def plot_loss_val(args, num_epochs, val_loss_list, val_acc_list, PLOT_STORE_PATH
     ax.set_title("Validation loss for the {} model".format(args.model))
     ax.set_xlabel('Epochs')
     ax.set_ylabel('CE Loss')
-    fig.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
+    fig.savefig(PLOT_STORE_PATH + 'loss_{}_{}_{:.4f}_{:.5f}.png'.format(args.model, args.summary,max(val_acc_list), float(args.lr)))
 
 
 # Plot the ROC/AUC Curve
@@ -85,9 +85,9 @@ def plot_roc_auc(args, test_acc, fpr, tpr):
     ax3.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc, markevery=100)
     ax3.plot(np.linspace(0,1,100), np.linspace(0,1,100), color='0.3', linestyle=':')
     ax3.set_title('Receiver Operating Characteristics for {} model'.format(args.model))
-    ax3.set_xlabel('True Positive Rate')
-    ax3.set_ylabel('False Positive Rate')
+    ax3.set_xlabel('False Positive Rate')
+    ax3.set_ylabel('True Positive Rate')
     ax3.set_xlim([0,1])
     ax3.set_ylim([0,1])
     ax3.legend(loc="best")
-    fig3.savefig(args.plot_store_path + 'roc_auc_curve_{}_{}_{:.2f}_{:.5f}.png'.format(args.model, args.summary, test_acc, args.lr))
+    fig3.savefig(args.plot_store_path + 'roc_auc_curve_{}_{}_{:.4f}_{:.5f}.png'.format(args.model, args.summary, test_acc, args.lr))

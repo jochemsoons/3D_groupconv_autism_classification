@@ -10,7 +10,9 @@ import h5py
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-
+import sys
+# sys.path.insert(0, "/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/afstudeerproject_KI/Jochem/3DGroupConv_adapted/")
+sys.path.insert(0, "/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/")
 from tensorflow.contrib import predictor
 
 from dltk.io.augmentation import extract_random_example_array
@@ -20,8 +22,59 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import confusion_matrix
 from plot import plot_roc_auc
 
-def predict(args):
-    test_model = '1558805223'
+def predict_after_train(args, export_dir):
+    test_f = h5py.File(args.test_file, 'r')
+    images = test_f[args.summary]
+    labels_ = test_f['labels']
+
+    # From the model_path, parse the latest saved model and restore a
+    # predictor from it
+    #export_dir = \
+        #[os.path.join(args.model_path, o) for o in sorted(os.listdir(args.model_path))
+         #if os.path.isdir(os.path.join(args.model_path, o)) and o.isdigit()][-1]
+    print('Loading from {}'.format(export_dir))
+    my_predictor = predictor.from_saved_model(export_dir)
+
+    # Iterate through data and labels and fetch results.
+    accuracy = []
+    labels = np.empty([], dtype=int)
+    predictions = np.empty([], dtype=int)
+
+    for img, lbl in zip(images, labels_):
+        t0 = time.time()
+
+        img = np.expand_dims(img,0)
+
+        y_ = my_predictor.session.run(
+            fetches=my_predictor._fetch_tensors['y_prob'],
+            feed_dict={my_predictor._feed_tensors['x']: img})
+
+        # Average the predictions on the test inputs:
+        y_ = np.mean(y_, axis=0)
+        predicted_class = np.argmax(y_)
+        labels = np.append(labels, lbl)
+        predictions = np.append(predictions, predicted_class)
+
+        # Calculate the accuracy for this subject
+        accuracy.append(predicted_class == lbl)
+
+        # Print outputs
+        # print('prob={}, pred={}; true={}; run time={:0.2f} s; '
+        #         ''.format(y_, predicted_class, lbl, time.time() - t0))
+    labels = labels[1:]
+    predictions = predictions[1:]
+    print("Percentage of label 1: {:.4f} (baseline of random classification)".format((np.sum(labels) / len(labels))))
+    print("Percentage classified as label 1: {}/{}".format(np.sum(predictions), len(labels)))
+    fpr, tpr, threshold = sklearn.metrics.roc_curve(np.array(labels), np.array(predictions))
+    cm1 = confusion_matrix(labels , predictions)
+    print('accuracy={}'.format(np.mean(accuracy)))
+    print('sens:', cm1[0,0]/(cm1[0,0]+cm1[0,1]))
+    print('spec:', cm1[1,1]/(cm1[1,0]+cm1[1,1]) )
+    print("Plotting roc/auc curve...")
+    plot_roc_auc(args, np.mean(accuracy), fpr, tpr)
+
+def predict(args,):
+    test_model = '1559042641'
     test_f = h5py.File(args.test_file, 'r')
     images = test_f[args.summary]
     labels_ = test_f['labels']
@@ -32,7 +85,7 @@ def predict(args):
         #[os.path.join(args.model_path, o) for o in sorted(os.listdir(args.model_path))
          #if os.path.isdir(os.path.join(args.model_path, o)) and o.isdigit()][-1]
     model_path = str(args.model_path + args.model + '/')
-    export_dir = os.path.join(model_path, 'best_loss/{}/'.format(test_model))
+    export_dir = os.path.join(model_path, 'best_acc/{}/'.format(test_model))
     print('Loading from {}'.format(export_dir))
     my_predictor = predictor.from_saved_model(export_dir)
 

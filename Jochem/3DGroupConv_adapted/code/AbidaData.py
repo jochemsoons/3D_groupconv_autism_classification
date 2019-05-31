@@ -1,64 +1,10 @@
 import numpy as np
+np.set_printoptions(threshold=np.inf)
 import random
-# import os
 import h5py
 import tensorflow as tf
-# import glob
-
-# from torch.utils.data import Dataset, DataLoader
-
-# class AbideDataset(Dataset):
-#     def __init__(self, root_path, subset, summary):
-
-
-#         self._root_path = root_path
-#         self._subset = subset
-#         self._data_to_train = summary
-
-#         self._make_dataset()
-
-#     # Get's the standard data of the abide dataset.
-#     def _make_dataset(self):
-
-#         self._data_files = glob.glob(os.path.join(self._root_path, '{}.hdf5'.format(self._subset)))
-
-#         # Get the number of samples
-#         with h5py.File(self._data_files[0]) as hf:
-#             self._num_examples_per_file = len(hf[self._data_to_train])
-#             self._num_examples = len(self._data_files)*self._num_examples_per_file
-
-#         # We have two classe
-#         self._classes = set([0,1])
-#         print('Number of {} HDF5 files found: {}'.format(self._subset, len(self._data_files)))
-#         print('Number of {} examples found:   {}'.format(self._subset, len(self)))
-#         print('Number of {} targets found:    {}\n'.format(self._subset, len(self._classes)))
-
-#     def __len__(self):
-#         return self._num_examples
-
-#     def __getitem__(self, idx):
-
-#         with h5py.File(self._data_files[0], 'r') as hf:
-#             img = hf[self._data_to_train][idx]
-#             target = hf['labels'][idx]
-
-#         img = torch.from_numpy(img)
-#         img = torch.squeeze(img, -1)
-#         img = torch.unsqueeze(img, 0)
-#         target = torch.from_numpy(np.asarray(target, np.int64))
-#         return img, target
-
-#     @property
-#     def classes(self):
-#         return self._classes
-
-#     @property
-#     def subset(self):
-#         return self._subset
-
-#     @property
-#     def num_classes(self):
-#         return len(self._classes)
+from scipy import stats
+from sklearn.preprocessing import normalize
 
 def write_subset_files(file, data_path, test_ratio, train_val_ratio):
     train_f = h5py.File(data_path +'train.hdf5', 'w')
@@ -97,10 +43,43 @@ def write_subset_files(file, data_path, test_ratio, train_val_ratio):
 
     train_f.close(), val_f.close(), test_f.close()
 
+def scale(X, x_min, x_max):
+    x = np.array(X)
+    # nom = X-X.min()*(x_max-x_min)
+    # denom = X.max() - X.min()
+    # denom = denom + (denom is 0)
+    xmin, xmax = x.max(), x.min()
+    x = (x - xmin)/(xmax - xmin)
+    return x
+    # return x_min + nom/denom
+
 def create_input_fn(file, summary, batch_size, num_epochs, shuffle=True):
     feature = file[summary]
     labels = file['labels']
+    # feature = np.array(feature)
+    # feature = stats.zscore(feature, axis=None)
+    # feature = scale(feature, -1, 1)
+    # print("mean", feature.mean())
+    # print("max", feature.max())
+    # print("min", feature.min())
+    # feature = feature - feature.mean()
+    # feature = feature / feature.max()
+    # print("mean", feature.mean())
+    # print("max", feature.max())
+    # print("min", feature.min())
 
+    # for feature_ in feature:
+    #     for feature__ in feature_:
+    #         for feature___ in feature__:
+    #             for feature____ in feature___:
+    #                 # if feature____ < -0.6913055 - 0.01 or feature____ > -0.6913055 + 0.01:
+    #                 #     print(feature____)
+    #                 if feature____ > 0.5 or feature____ < -0.5:
+    #                     print(feature____)
+                    # if feature____ != 0:
+                    #     print(feature____)
+
+    print("Percentage of label 1: {:.4f} (baseline of random classification)".format((np.sum(labels) / len(labels))))
     input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'x': np.asarray(feature)},
         y={'y': np.asarray(labels)},
@@ -110,3 +89,19 @@ def create_input_fn(file, summary, batch_size, num_epochs, shuffle=True):
         queue_capacity=5000,
         num_threads=1)
     return input_fn
+
+def explore_data(file):
+    print("Printing description of data contents...")
+    summaries = file['summaries']
+    print("Data consists of {} summaries:\n {}".format(len(summaries), list(summaries)))
+    attrs = summaries.attrs
+    labels = attrs['DX_GROUP']
+    print("Data consists of {} samples".format(len(labels)))
+    patients = 0
+    controls = 0
+    for label in labels:
+        if label == 1:
+            patients += 1
+        else:
+            controls += 1
+    print("ASD patients: {} \nControl group: {}".format(patients, controls))
