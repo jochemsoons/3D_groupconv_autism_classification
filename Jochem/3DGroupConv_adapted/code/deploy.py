@@ -39,6 +39,7 @@ def predict_after_train(args, export_dir):
     accuracy = []
     labels = np.empty([], dtype=int)
     predictions = np.empty([], dtype=int)
+    probabilities = np.empty([], dtype=float)
 
     for img, lbl in zip(images, labels_):
         t0 = time.time()
@@ -54,6 +55,7 @@ def predict_after_train(args, export_dir):
         predicted_class = np.argmax(y_)
         labels = np.append(labels, lbl)
         predictions = np.append(predictions, predicted_class)
+        probabilities = np.append(probabilities, y_[1])
 
         # Calculate the accuracy for this subject
         accuracy.append(predicted_class == lbl)
@@ -63,9 +65,10 @@ def predict_after_train(args, export_dir):
         #         ''.format(y_, predicted_class, lbl, time.time() - t0))
     labels = labels[1:]
     predictions = predictions[1:]
+    probabilities = probabilities[1:]
     print("Percentage of label 1: {:.4f} (baseline of random classification)".format((np.sum(labels) / len(labels))))
     print("Percentage classified as label 1: {}/{}".format(np.sum(predictions), len(labels)))
-    fpr, tpr, threshold = sklearn.metrics.roc_curve(np.array(labels), np.array(predictions))
+    fpr, tpr, threshold = sklearn.metrics.roc_curve(labels, probabilities)
     cm1 = confusion_matrix(labels , predictions)
     print('accuracy={}'.format(np.mean(accuracy)))
     print('sens:', cm1[0,0]/(cm1[0,0]+cm1[0,1]))

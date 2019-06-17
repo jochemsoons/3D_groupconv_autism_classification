@@ -15,7 +15,7 @@ from tensorflow.python.ops import nn
 from tensorflow.python.ops import variable_scope
 
 def gconv3d(input, filter, strides, padding, gconv_indices, gconv_shape_info,
-            use_cudnn_on_gpu=None, data_format='NHWC', name=None):
+            use_cudnn_on_gpu=True, data_format='NHWC', name=None):
     """
     Implements the g-convolution. Similar interface as the standard 3D convolution in tensorflow, with gconv_indices
     and gconv_shape_info as additional parameters. These can be obtained using gconv3d_util.
@@ -38,7 +38,7 @@ def gconv3d(input, filter, strides, padding, gconv_indices, gconv_shape_info,
 
     # Transform the filters
     transformed_filter = transform_filter_3d_nhwc(w=filter, flat_indices=gconv_indices, shape_info=gconv_shape_info)
-
+    # print(transformed_filter)
     # Convolve input with transformed filters
     conv = tf.nn.conv3d(input=input, filter=transformed_filter, strides=strides, padding=padding, name=name)
 
@@ -120,16 +120,16 @@ def gconv2d_addbias(input, bias, nti=8):
     pass  # TODO
 
 
-def gconv3d_unit(x,out_channels):
+def gconv3d_unit(x, out_channels, ksize):
     in_channels = x.get_shape().as_list()[-1]
     gconv_indices, gconv_shape_info, w_shape = gconv3d_util(
-        h_input='Z3', h_output='O', in_channels=in_channels, out_channels=out_channels, ksize=3)
+        h_input='Z3', h_output='O', in_channels=in_channels, out_channels=out_channels, ksize=ksize)
     w = tf.Variable(tf.truncated_normal(w_shape, stddev=1.))
     y = gconv3d(input=x, filter=w, strides=[1, 1, 1, 1, 1], padding='SAME',
                 gconv_indices=gconv_indices, gconv_shape_info=gconv_shape_info)
 
     gconv_indices, gconv_shape_info, w_shape = gconv3d_util(
-        h_input='O', h_output='O', in_channels=out_channels, out_channels=out_channels, ksize=3)
+        h_input='O', h_output='O', in_channels=out_channels, out_channels=out_channels, ksize=ksize)
     w = tf.Variable(tf.truncated_normal(w_shape, stddev=1.))
     y = gconv3d(input=y, filter=w, strides=[1, 2, 2, 2, 1], padding='SAME',
                 gconv_indices=gconv_indices, gconv_shape_info=gconv_shape_info)

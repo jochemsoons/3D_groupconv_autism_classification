@@ -23,7 +23,7 @@ from config import print_config
 from plot import *
 from deploy import predict_after_train
 
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 NUM_CLASSES = 2
 NUM_CHANNELS = 1
 SHUFFLE_CACHE_SIZE = 32
@@ -298,6 +298,14 @@ def train(args):
         pass
 
     print("Done with training. lowest loss: {:.4f}, highest acc.: {:.4f}".format(best_val_loss, best_val_acc))
+    # slice_count = 0
+    # for val_loss in val_loss_list:
+    #     if val_loss > 1:
+    #         slice_count += 1
+    #     else:
+    #         break
+    # train_acc_list = train_acc_list[slice_count:]
+    # nepochs -= slice_count - 2
 
     # Plot accuracy and loss
     print("Creating plots...")
