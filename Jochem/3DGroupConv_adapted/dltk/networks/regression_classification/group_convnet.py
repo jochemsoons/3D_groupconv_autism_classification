@@ -151,16 +151,18 @@ def convnet_3d(inputs,
         # elif i == 3:
         #     kernel_size=(3,3,3)
         kernel_size=(3,3,3)
+        # print('output shape conv before layer {} : {}'.format(i+1,x.get_shape()))
         layer = tf.layers.Conv3D(filters=filters[i],kernel_size=kernel_size, strides=(2,2,2), padding='same')
         x = layer(x)
+        # print('output shape conv after layer {} : {}'.format(i+1,x.get_shape()))
+
         x = tf.layers.batch_normalization(x,training=mode == tf.estimator.ModeKeys.TRAIN)
         x = activation(x)
         if i in [1]:
             x = tf.layers.max_pooling3d(x,2,strides=2)
+            # print('output shape after pool layer: {}'.format(x.get_shape()))
         if i in [0, 1, 2]:
             x = tf.layers.dropout(x,rate=0.5,training=mode == tf.estimator.ModeKeys.TRAIN)
-
-        # print('output shape after layer {} : {}'.format(i+1,x.get_shape()))
 
     x = tf.layers.Flatten()(x)
     # print("output shape after flattening: {}".format(x.get_shape()))
@@ -199,80 +201,3 @@ def convnet_3d(inputs,
         outputs['y_'] = y_
 
     return outputs
-
-# def convnet_3d(inputs,
-#               num_classes,
-#               filters=(16, 32, 64),
-#               mode=tf.estimator.ModeKeys.EVAL,
-#               use_bias=False,
-#               activation=tf.nn.relu6,
-#               kernel_initializer=tf.initializers.variance_scaling(distribution='uniform'),
-#               bias_initializer=tf.zeros_initializer(),
-#               kernel_regularizer=None, bias_regularizer=None):
-
-#     outputs = {}
-#     assert len(inputs.get_shape().as_list()) == 5, \
-#         'inputs are required to have a rank of 5.'
-
-#     relu_op = tf.nn.relu6
-
-#     conv_params = {'padding': 'same',
-#                 'use_bias': use_bias,
-#                 'kernel_initializer': kernel_initializer,
-#                 'bias_initializer': bias_initializer,
-#                 'kernel_regularizer': kernel_regularizer,
-#                 'bias_regularizer': bias_regularizer}
-#     x = inputs
-#     x = tf.layers.max_pooling3d(x,2,strides=2)
-#     for i in range(len(filters)):
-#         if i == 0:
-#             kernel_size=(5,5,5)
-#         elif i == 1:
-#             kernel_size=(3,3,3)
-
-#         layer = tf.layers.Conv3D(filters=filters[i],kernel_size=kernel_size)
-#         x = layer(x)
-#         if i == 1:
-#             x = tf.layers.max_pooling3d(x,2,strides=2)
-#         x = activation(x)
-#         x = tf.layers.batch_normalization(x,training=mode == tf.estimator.ModeKeys.TRAIN)
-#         x = tf.layers.dropout(x,rate=0.3,training=mode == tf.estimator.ModeKeys.TRAIN)
-
-#         # print('output shape after layer {} : {}'.format(i+1,x.get_shape()))
-
-#     x = tf.layers.Flatten()(x)
-#     # print("output shape after flattening: {}".format(x.get_shape()))
-#     x = tf.layers.dense(inputs=x,
-#                         units=512,
-#                         activation=None,
-#                         use_bias=conv_params['use_bias'],
-#                         kernel_initializer=conv_params['kernel_initializer'],
-#                         bias_initializer=conv_params['bias_initializer'],
-#                         kernel_regularizer=conv_params['kernel_regularizer'],
-#                         bias_regularizer=conv_params['bias_regularizer'],
-#                         name='hidden_units_0')
-#     x = tf.layers.dropout(x,rate=0.3,training=mode == tf.estimator.ModeKeys.TRAIN)
-#     x = tf.layers.dense(inputs=x,
-#                         units=num_classes,
-#                         activation=None,
-#                         use_bias=conv_params['use_bias'],
-#                         kernel_initializer=conv_params['kernel_initializer'],
-#                         bias_initializer=conv_params['bias_initializer'],
-#                         kernel_regularizer=conv_params['kernel_regularizer'],
-#                         bias_regularizer=conv_params['bias_regularizer'],
-#                         name='hidden_units')
-#     x = tf.layers.dropout(x,rate=0.3,training=mode == tf.estimator.ModeKeys.TRAIN)
-
-#     # Define the outputs
-#     outputs['logits'] = x
-#     with tf.variable_scope('pred'):
-
-#         y_prob = tf.nn.softmax(x)
-#         outputs['y_prob'] = y_prob
-
-#         y_ = tf.argmax(x, axis=-1) \
-#             if num_classes > 1 \
-#             else tf.cast(tf.greater_equal(x[..., 0], 0.5), tf.int32)
-#         outputs['y_'] = y_
-
-#     return outputs

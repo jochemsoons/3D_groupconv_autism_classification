@@ -53,31 +53,23 @@ def scale(X, x_min, x_max):
     return x
     # return x_min + nom/denom
 
-def create_input_fn(file, summary, batch_size, num_epochs, shuffle=True):
+def create_input_fn(file, summary, batch_size, num_epochs, sample_ratio, shuffle=True):
     feature = file[summary]
     labels = file['labels']
+    ratio_split = int(sample_ratio*len(feature))
+    feature = feature[:ratio_split]
+    labels = labels[:ratio_split]
     # feature = np.array(feature)
     # feature = stats.zscore(feature, axis=None)
     # feature = scale(feature, -1, 1)
-    # print("mean", feature.mean())
-    # print("max", feature.max())
-    # print("min", feature.min())
-    # feature = feature - feature.mean()
-    # feature = feature / feature.max()
-    # print("mean", feature.mean())
-    # print("max", feature.max())
-    # print("min", feature.min())
-
-    # for feature_ in feature:
-    #     for feature__ in feature_:
-    #         for feature___ in feature__:
-    #             for feature____ in feature___:
-    #                 # if feature____ < -0.6913055 - 0.01 or feature____ > -0.6913055 + 0.01:
-    #                 #     print(feature____)
-    #                 if feature____ > 0.5 or feature____ < -0.5:
-    #                     print(feature____)
-                    # if feature____ != 0:
-                    #     print(feature____)
+    print("mean", feature.mean())
+    print("max", feature.max())
+    print("min", feature.min())
+    feature = feature - feature.mean()
+    feature = feature / feature.max()
+    print("mean", feature.mean())
+    print("max", feature.max())
+    print("min", feature.min())
 
     print("Percentage of label 1: {:.4f} (baseline of random classification)".format((np.sum(labels) / len(labels))))
     input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -88,7 +80,31 @@ def create_input_fn(file, summary, batch_size, num_epochs, shuffle=True):
         shuffle=shuffle,
         queue_capacity=5000,
         num_threads=1)
-    return input_fn
+    return input_fn, len(labels)
+
+def create_input_fn_test_mode(train_f, val_f, summary, batch_size, num_epochs, sample_ratio, shuffle=True):
+    feature_t = train_f[summary]
+    feature_v = val_f[summary]
+    feature = np.concatenate((feature_t, feature_v))
+
+    labels_t = train_f['labels']
+    labels_v = val_f['labels']
+    labels = np.concatenate((labels_t, labels_v))
+
+    ratio_split = int(sample_ratio*len(feature))
+    feature = feature[:ratio_split]
+    labels = labels[:ratio_split]
+
+    print("Percentage of label 1: {:.4f} (baseline of random classification)".format((np.sum(labels) / len(labels))))
+    input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={'x': np.asarray(feature)},
+        y={'y': np.asarray(labels)},
+        batch_size=batch_size,
+        num_epochs=num_epochs,
+        shuffle=shuffle,
+        queue_capacity=5000,
+        num_threads=1)
+    return input_fn, len(labels)
 
 def explore_data(file):
     print("Printing description of data contents...")

@@ -18,7 +18,7 @@ sys.path.insert(0, "/home/jsoons/afstudeerproject_KI/Jochem/3DGroupConv_/")
 import h5py
 from abstract_reader import Reader
 from dltk.networks.regression_classification.group_convnet import groupnet_3d,convnet_3d
-from AbidaData import create_input_fn, write_subset_files, explore_data
+from AbidaData import *
 from config import print_config
 from plot import *
 from deploy import predict_after_train
@@ -181,6 +181,7 @@ def train(args):
 
     train_f = h5py.File(args.train_file, 'r')
     val_f = h5py.File(args.val_file, 'r')
+    test_f = h5py.File(args.test_file, 'r')
 
     nepochs = args.epochs
     BATCH_SIZE = int(args.batch_size)
@@ -189,18 +190,23 @@ def train(args):
     NUM_CHANNELS = 1
     SHUFFLE_CACHE_SIZE = 32
     model_path = str(args.model_path + args.model + '/')
-    training_size = len(train_f[args.summary])
-    validation_size = len(val_f[args.summary])
-    EVAL_EVERY_N_STEPS = int(training_size/ BATCH_SIZE)
-    EVAL_STEPS = int(validation_size/ BATCH_SIZE)
-    MAX_STEPS = EVAL_EVERY_N_STEPS * nepochs
+    # training_size = len(train_f[args.summary])
+    # validation_size = len(val_f[args.summary])
 
     reader = Reader(dtypes={'features': {'x': tf.float32},
                      'labels': {'y': tf.int32}})
 
-    # Get input functions for training and validation data
-    train_input_fn = create_input_fn(train_f, args.summary, BATCH_SIZE, nepochs, shuffle=True)
-    val_input_fn = create_input_fn(val_f, args.summary, BATCH_SIZE, nepochs, shuffle=False)
+    if args.test_mode:
+        train_input_fn, training_size = create_input_fn_test_mode(train_f, val_f, args.summary, BATCH_SIZE, nepochs, args.sample_ratio, shuffle=True)
+        val_input_fn, validation_size = create_input_fn(test_f, args.summary, BATCH_SIZE, nepochs, sample_ratio=1, shuffle=False)
+    else:
+        # Get input functions for training and validation data
+        train_input_fn, training_size = create_input_fn(train_f, args.summary, BATCH_SIZE, nepochs, args.sample_ratio, shuffle=True)
+        val_input_fn, validation_size = create_input_fn(val_f, args.summary, BATCH_SIZE, nepochs, sample_ratio=1, shuffle=False)
+
+    EVAL_EVERY_N_STEPS = int(training_size/ BATCH_SIZE)
+    EVAL_STEPS = int(validation_size/ BATCH_SIZE)
+    MAX_STEPS = EVAL_EVERY_N_STEPS * nepochs
 
     # Instantiate the neural network estimator
     if args.model == 'conv3d':
@@ -361,6 +367,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_file', default= '/home/jsoons/afstudeerproject_KI/Jochem/Datasets/test.hdf5')
     # parser.add_argument('--test_file', default= '/home/jochemsoons/Documents/BG_jaar_3/Bsc_Thesis/test.hdf5')
     parser.add_argument('--test_ratio', type=float, default=0.2, help='ratio that defines size of test set')
+    parser.add_argument('--test_mode', default=False, action='store_true')
+    parser.add_argument('--sample_ratio', type=float, default=1.0, help='ratio that defines size of training set used')
     parser.add_argument('--train_val_ratio', type=float, default=0.8, help='ratio of train/val set sizes')
     parser.add_argument('--epochs', type=int, default=100, metavar='N', help='number of epochs to train (default: 100)')
     parser.add_argument('--num_classes', type=int, default=2)
